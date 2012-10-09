@@ -29,6 +29,8 @@ function Class()
 		if(arguments.length > 0)
 		{
 			this.init(arguments);
+		}else{
+			this.init();	
 		}
 	}
 };
