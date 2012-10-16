@@ -16,7 +16,7 @@
 */
 var J;
 //	Objects extends - for prototype inheritance.
-Object.prototype.extends = function(o)
+Object.prototype.extend = function(o)
 {
 	//set my prototype to my parent class.
 	this.prototype = o.prototype;
@@ -35,15 +35,7 @@ function Class()
 	{
 		if(arguments.length > 0)
 		{
-			for(i; i < arguments.length; i = i + 1)
-			{
-				if(i >= 1)
-					{args +=", "}					
-				args += "arguments[" + i + "]";
-			}
-			
-			eval("this.init("+args+");");
-			
+			this.init.apply(this,arguments);
 		}else{
 			this.init();	
 		}
@@ -74,10 +66,11 @@ JavaJump.prototype.Start = function(e) {
 J = new JavaJump();
 
 if(window.addEventListener){	
-	function start(e){J.Start(e);};
-	window.addEventListener('load',start,false);
+	"use strict";
+	window.addEventListener('load',function (e){J.Start(e);},false);
 }else{
 	window.onload = function(evt){
+		"use strict";
 		evt = evt || window.event;
 		J.Start(evt);
 	}
