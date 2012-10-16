@@ -24,6 +24,24 @@ Object.prototype.extend = function(o)
 	this.prototype.constructor = this;
 	return this;
 }
+
+// Object Implements properties from other prototype, f = destructive flag.
+Object.prototype.implement = function(o,f)
+{
+	"use strict";
+	var i, f = f || false;
+	//For all prototpe properties
+	for(i in o.prototype)
+	{
+		//	If the property doesn't exist, or destructive is switched on.
+		if(typeof(this.prototype[i]) == "undefined" || (f && this.prototype[i] != "init"))
+		{
+			this.prototype[i] = o.prototype[i];
+		}
+	}	
+	return this;
+}
+
 //	Class() - syntactic sugar function.
 function Class()
 {
