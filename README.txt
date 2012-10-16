@@ -1,5 +1,10 @@
 JavaJump Library:
 
+Version 0.6
+		-Update JavaJump to Version 1.2
+			-Added class instantiation with arguments and the ability to extend for single inheritance.
+		-Update Jstage to version 0.1
+			-Basic Class oriented use is available.
 Version 0.5
 		-Update JavaJump to Version 1.0
 			-Enabled x-browser eventlistners for onload.

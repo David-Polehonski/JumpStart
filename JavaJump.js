@@ -1,11 +1,15 @@
 /*
 ||***************************************||
 ||	JavaJumpStart!
-||		Version 1.1
+||		Version 1.2
 ||		- Acts as a platform / namespace
 ||		for JavaJump style programs
 ||	changelog
-||		-05/07/2012:
+||		-16/10/2012: 1.2
+||			Added auto instantiation, and 
+||			init method with args.
+||			fixed Object.extends()
+||		-05/07/2012: 1.1
 ||			added object extensibility
 ||			and class function.
 ||***************************************||
@@ -15,25 +19,39 @@ var J;
 Object.prototype.extends = function(o)
 {
 	//set my prototype to my parent class.
-	this.prototype = new o();
+	this.prototype = o.prototype;
 	//and my constructor function to myself.
 	this.prototype.constructor = this;
+	return this;
 }
 //	Class() - syntactic sugar function.
 function Class()
 {
 	"use strict";
-	//return a new class
-	return function()
+	var i=0, args = "", a;
+	
+	//Build basic Class
+	a = function()
 	{
 		if(arguments.length > 0)
 		{
-			this.init(arguments);
+			for(i; i < arguments.length; i = i + 1)
+			{
+				if(i >= 1)
+					{args +=", "}					
+				args += "arguments[" + i + "]";
+			}
+			
+			eval("this.init("+args+");");
+			
 		}else{
 			this.init();	
 		}
 	}
-};
+	a.prototype.init = function(){};
+	//return a new class 
+	return a;
+}
 
 
 function JavaJump(){

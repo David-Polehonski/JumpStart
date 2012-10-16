@@ -4,8 +4,10 @@
  *		Basic class must exist withing a stage Object parent class
  */
 
-function hitArea (x){
-        this.parent=x;
+var hitArea = new Class();
+
+hitArea.prototype.init = function(x){
+        this.parent = x;
 }
 
 hitArea.prototype.setType=function(type,args){

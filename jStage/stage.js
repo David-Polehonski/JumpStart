@@ -5,7 +5,9 @@
 ||
 ||**********************************||
 */
-function stage(canvasEl){
+var stage = new Class();
+
+stage.prototype.init = function(canvasEl){
         this.EL = canvasEl;
         this.EL.stage = this;
         this.context = canvasEl.getContext("2d");
@@ -101,10 +103,10 @@ function stage(canvasEl){
                         }
         }
 
-        /*Begin Frame rendering*/
+        /*Begin Frame rendering
         this.frames = new Framerate();
         this.frames.setRate(this.FrameRate);
-        this.frames.reset();
+        this.frames.reset();*/
         
         render = function(){
                 canvasEl.stage.renderRun();     
@@ -181,6 +183,5 @@ stage.prototype.program = function(args){
 }
 
 stage.prototype.addObject = function(actor){
-	alert(this.scenes[0]);
-       this.scenes[this.currentScene].actors.push(actor);        
+	this.scenes[this.currentScene].actors.push(actor);        
 }

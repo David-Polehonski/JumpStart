@@ -2,7 +2,7 @@
 ||	jStage
 || 		stageObject class
 */
-stageObject = Class();
+stageObject = new Class();
 
 stageObject.prototype.init = function(instanceName,stage)
 {
@@ -24,7 +24,7 @@ stageObject.prototype.listen = function(evt,callback){
         this.stage.mouse.events[evt].push(callback);
 }
 
-stageObject.prototype.createHitArea = function(type,args){
+stageObject.prototype.createHitArea = function(){
         this.hitArea = new hitArea(this);
 }
 
