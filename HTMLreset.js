@@ -55,8 +55,11 @@ function HTML5(){};
 
 HTML5.prototype.Jump = function(){
 	this.name="HTML5";
+	var newStyle = document.getElementsByTagName('head')[0].appendChild(document.createElement('style'));
+	newStyle.styleSheet.addRule("html.ie *","zoom:1;",0);
 }
 
+J.Jboxes.push(new HTML5());
 /*Array.indexOf*/
 if(!Array.prototype.indexOf){Array.prototype.indexOf=function(s){try{var j=this.length,a=(!isNaN(arguments[1]))?arguments[1]:null||null;var i=(a != null)?a:0;for(i;i<j;i++){if(this[i]==s){return i;}}return -1;}catch(e){console.log("indexOf: ERROR"+e);return -1;}}};
 
