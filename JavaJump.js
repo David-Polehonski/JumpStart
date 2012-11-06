@@ -15,32 +15,7 @@
 ||***************************************||
 */
 var J;
-//	Objects extends - for prototype inheritance.
-Object.prototype.extend = function(o)
-{
-	//set my prototype to my parent class.
-	this.prototype = o.prototype;
-	//and my constructor function to myself.
-	this.prototype.constructor = this;
-	return this;
-}
 
-// Object Implements properties from other prototype, f = destructive flag.
-Object.prototype.implement = function(o,f)
-{
-	"use strict";
-	var i, f = f || false;
-	//For all prototpe properties
-	for(i in o.prototype)
-	{
-		//	If the property doesn't exist, or destructive is switched on.
-		if(typeof(this.prototype[i]) == "undefined" || (f && this.prototype[i] != "init"))
-		{
-			this.prototype[i] = o.prototype[i];
-		}
-	}	
-	return this;
-}
 
 //	Class() - syntactic sugar function.
 function Class()
@@ -59,9 +34,38 @@ function Class()
 		}
 	}
 	a.prototype.init = function(){};
+	//	Objects extends - for prototype inheritance.
+	a.extend = function(o)
+		{
+			//set my prototype to my parent class.
+			this.prototype = o.prototype;
+			//and my constructor function to myself.
+			this.prototype.constructor = this;
+			
+			return this;
+		}
+	
+	// Object Implements properties from other prototype, f = destructive flag.
+	a.implement = function(o,f)
+		{
+			"use strict";
+			var i, flag = f || false;
+			//For all prototpe properties
+			for(i in o.prototype)
+			{
+				//	If the property doesn't exist, or destructive is switched on.
+				if(typeof(this.prototype[i]) == "undefined" || (flag && this.prototype[i] != "init"))
+				{
+					this.prototype[i] = o.prototype[i];
+				}
+			}	
+			
+			return this;
+		}
 	//return a new class 
 	return a;
 }
+
 
 
 function JavaJump(){
@@ -84,7 +88,6 @@ JavaJump.prototype.Start = function(e) {
 J = new JavaJump();
 
 if(window.addEventListener){	
-	"use strict";
 	window.addEventListener('load',function (e){J.Start(e);},false);
 }else{
 	window.onload = function(evt){
