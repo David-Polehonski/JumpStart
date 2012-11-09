@@ -1,10 +1,13 @@
 /*
 ||***************************************||
 ||	JavaJumpStart!
-||		Version 1.2
+||		Version 1.3
 ||		- Acts as a platform / namespace
 ||		for JavaJump style programs
 ||	changelog
+||		-07/11/2012: 1.3
+||			Update extends and implements
+||			to be self contained.
 ||		-16/10/2012: 1.2
 ||			Added auto instantiation, and 
 ||			init method with args.
@@ -54,7 +57,7 @@ function Class()
 			for(i in o.prototype)
 			{
 				//	If the property doesn't exist, or destructive is switched on.
-				if(typeof(this.prototype[i]) == "undefined" || (flag && this.prototype[i] != "init"))
+				if(!this.prototype.hasOwnProperty(i) || (flag && this.prototype[i] != "init"))
 				{
 					this.prototype[i] = o.prototype[i];
 				}
