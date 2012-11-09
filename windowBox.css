@@ -10,7 +10,7 @@
 	font:Verdana, Geneva, sans-serif;
 	font-size:14px;
 	colour:#000000;
-	background-color:#000000;
+	background-color:#F1E3B4;
 	text-align:center;	
 	border:1px solid #CCCCCC;
 	border-radius:2px;
@@ -25,7 +25,7 @@
 	filter:alpha(opacity = 100);
 	
 	overflow:hidden;
-	
+	overflow-y:scroll;
 	-moz-box-sizing:content-box;
 	-webkit-box-sizing:content-box;
 	-o-box-sizing:content-box;

@@ -42,27 +42,12 @@ win.prototype.Jump = function (){
 	this.background.parent = this;
 	this.background.onclick = function(e){
 		e = e || window.event;
-		
+			
 		co_ords = this.parent.getOffsetPosition();
 		
 		mouse = this.parent.getMouse(e);
+		this.parent.hideWindow();
 		
-		if(mouse[0] < co_ords[0]){
-			this.parent.hideWindow();
-			
-		}
-		if(mouse[0] > co_ords[2]){
-			this.parent.hideWindow();
-			
-		}
-		if(mouse[1] < co_ords[1]){
-			this.parent.hideWindow();
-			
-		}
-		if(mouse[1] > co_ords[3]){
-			this.parent.hideWindow();
-			
-		}
 	}
 }
 
@@ -108,6 +93,11 @@ win.prototype.newWindow=function(width, height,closeable){
 	newWin.style.marginTop = "150px";
 	newWin.style.zIndex = "60";
 	newWin.className = "window";
+	newWin.onclick = function(e)
+	{
+		e.stopPropagation();
+		e.stopImmediatePropagation();	
+	}
 	if(closeable == true){
 		closeDiv  = document.createElement('div');
 		closeDiv.className = "windowCloseButton";
@@ -139,6 +129,7 @@ win.prototype.showWindow= function(winID){
 win.prototype.hideWindow = function (winID){
 	
 	winID = (typeof(winID) != 'undefined' ? winID : this.currentWindow);
+	
 	
 	if(this.windows[winID].onclose)
 	{
