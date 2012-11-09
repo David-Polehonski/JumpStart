@@ -1,6 +1,11 @@
 JavaJump Library:
 
 Version 0.7
+		-JavaJump Version 1.3 (Minified)
+		-Jdnd Version 1 (Minified)
+		-dataGrabber Version 1 (Minified)
+
+Version 0.7
 		-Update JavaJump to Version 1.3
 			-Added class instantiation with arguments and the ability to extend for single inheritance and interface implementations.
 		-Update Jstage to version 0.1
