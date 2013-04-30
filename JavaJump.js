@@ -1,102 +1,87 @@
-/*
-||***************************************||
-||	JavaJumpStart!
-||		Version 1.3
-||		- Acts as a platform / namespace
-||		for JavaJump style programs
-||	changelog
-||		-07/11/2012: 1.3
-||			Update extends and implements
-||			to be self contained.
-||		-16/10/2012: 1.2
-||			Added auto instantiation, and 
-||			init method with args.
-||			fixed Object.extends()
-||		-05/07/2012: 1.1
-||			added object extensibility
-||			and class function.
-||***************************************||
-*/
-var J;
-
-
-//	Class() - syntactic sugar function.
-function Class()
+(function(nameSpace)
 {
-	"use strict";
-	var i=0, args = "", a;
-	
-	//Build basic Class
-	a = function()
+	var Start,
+		n = nameSpace || {};
+	//	Class() - syntactic sugar function.
+	n.Class = function()
 	{
-		if(arguments.length > 0)
-		{
-			this.init.apply(this,arguments);
-		}else{
-			this.init();	
-		}
-	}
-	a.prototype.init = function(){};
-	//	Objects extends - for prototype inheritance.
-	a.extend = function(o)
-		{
-			//set my prototype to my parent class.
-			this.prototype = o.prototype;
-			//and my constructor function to myself.
-			this.prototype.constructor = this;
-			
-			return this;
-		}
-	
-	// Object Implements properties from other prototype, f = destructive flag.
-	a.implement = function(o,f)
+		"use strict";
+		// Create a 
+		var _;
+		(_ = (function()
 		{
 			"use strict";
-			var i, flag = f || false;
-			//For all prototpe properties
-			for(i in o.prototype)
+			if(arguments.length > 0)
 			{
-				//	If the property doesn't exist, or destructive is switched on.
-				if(!this.prototype.hasOwnProperty(i) || (flag && this.prototype[i] != "init"))
+				this.init.apply(this,arguments);
+				
+			}else{
+				this.init();	
+			}
+		})).prototype = {
+			'init':function(){},
+			'toString':function(){return 'Class';},
+			'extend':function(o)
+			{
+				"use strict";
+				//Create empty constructor.
+				var temporary = function(){};
+				//Assign target prototype by reference.
+				temporary.prototype = o.prototype;
+				//Inherit prototype via the temporary constructor.
+				this.prototype = new temporary();
+				//Save the parent prototype's init method.
+				this.prototype.parent = o.prototype;			
+				return this;
+			},
+			'accessors':function(varName)
+			{
+				this[varName] = this[varName] || '';
+				this.getter(varName);
+				this.setter(varName);
+			},
+			'getter':function(varName)
+			{
+				this[varName] = this[varName] || '';
+				this["get" + varName.charAt(0).toUpperCase() + varName.slice(1)] = function()
 				{
-					this.prototype[i] = o.prototype[i];
+					return this[varName];
 				}
-			}	
-			
-			return this;
+			},
+			'setter':function(varName)
+			{
+				this[varName] = this[varName] || '';
+				this["set" + varName.charAt(0).toUpperCase() + varName.slice(1)] = function(value)
+				{
+					this[varName] = value;
+					return;
+				}
+			}		
 		}
-	//return a new class 
-	return a;
-}
-
-
-
-function JavaJump(){
-	this.Jboxes = new Array();
-	this.onloadEvent = "";
-}
-
-JavaJump.prototype.Main = function(){
-	//Default function	
-}
-
-JavaJump.prototype.Start = function(e) {
-	for (var i = 0; i< this.Jboxes.length; i++){
-		this.Jboxes[i].Jump();	
-		this[this.Jboxes[i].name] = this.Jboxes[i];
+		return _;
 	}
-	this.Main();
-}
-
-J = new JavaJump();
-
-if(window.addEventListener){	
-	window.addEventListener('load',function (e){J.Start(e);},false);
-}else{
-	window.onload = function(evt){
-		"use strict";
-		evt = evt || window.event;
-		J.Start(evt);
+	n.Jboxes = [];
+	n.Main = function(){};
+	
+	Start = function(e) 
+	{
+		var i = 0,
+			l = n.Jboxes.length;
+		for (i; i< l; i+=1){
+			n.Jboxes[i].Jump();	
+			n[n.Jboxes[i].name] = n.Jboxes[i];
+		}
+		n.Main();
 	}
-}
-
+		
+	if(window.addEventListener){	
+		window.addEventListener('load',function(e){Start(e);},false);
+	}else{
+		window.onload = function(e){
+			"use strict";
+			var E = e || window.event;
+			Start(E);
+		}
+	}
+	return n;
+})(window.J = window.J || {})
