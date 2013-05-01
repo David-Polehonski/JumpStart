@@ -21,19 +21,6 @@
 		})).prototype = {
 			'init':function(){},
 			'toString':function(){return 'Class';},
-			'extend':function(o)
-			{
-				"use strict";
-				//Create empty constructor.
-				var temporary = function(){};
-				//Assign target prototype by reference.
-				temporary.prototype = o.prototype;
-				//Inherit prototype via the temporary constructor.
-				this.prototype = new temporary();
-				//Save the parent prototype's init method.
-				this.prototype.parent = o.prototype;			
-				return this;
-			},
 			'accessors':function(varName)
 			{
 				this[varName] = this[varName] || '';
@@ -58,8 +45,27 @@
 				}
 			}		
 		}
+		_.extend = function(o)
+		{
+			"use strict";
+			//Create empty constructor.
+			var temporary = function(){};
+			//Assign target prototype by reference.
+			temporary.prototype = o.prototype;
+			//Inherit prototype via the temporary constructor.
+			this.prototype = new temporary();
+			//Save the parent prototype's init method.
+			this.prototype.parent = o.prototype;			
+			return this;
+		}
 		return _;
 	}
+	
+	n.Class.prototype.extend = function()
+	{
+		alert("extending");
+	}
+	
 	n.Jboxes = [];
 	n.Main = function(){};
 	
