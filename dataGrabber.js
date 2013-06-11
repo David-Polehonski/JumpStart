@@ -1,5 +1,5 @@
 //	Class: dataGrabber.js
-J.dataGrabber = new Class();
+J.dataGrabber = new J.Class();
 
 J.dataGrabber.prototype.getData = function(HTMLelement)
 {

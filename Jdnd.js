@@ -1,8 +1,4 @@
-if (J.dataGrabber) {
-    J.dragAndDrop = new Class().implement(J.dataGrabber);
-} else {
-    J.dragAndDrop = new Class();
-}
+J.dragAndDrop = new J.Class();
 
 J.dragAndDrop.prototype.init = function (element) {
     "use strict";

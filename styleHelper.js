@@ -1,5 +1,5 @@
 // JavaScript Documentvar 
-styleHelper = new Class()
+styleHelper = new J.Class()
 
 styleHelper.prototype.xBrowserGetStyles = function(styleBlock)
 {
