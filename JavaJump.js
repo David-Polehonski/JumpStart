@@ -11,36 +11,50 @@
 		(_ = (function()
 		{
 			"use strict";
+			
 			if(arguments.length > 0)
 			{
 				this.init.apply(this,arguments);
-				
 			}else{
-				this.init();	
+				this.init();
 			}
+			
+			delete self.private;
+						
 		})).prototype = {
 			'init':function(){},
 			'toString':function(){return 'Class';},
 			'accessors':function(varName)
 			{
-				this[varName] = this[varName] || '';
 				this.getter(varName);
 				this.setter(varName);
 			},
 			'getter':function(varName)
 			{
-				this[varName] = this[varName] || '';
+				var local;
+				
+				this.private = this.private || {};
+				this.private[varName] = this.private[varName] || null;
+				
+				local = this.private;
+				
 				this["get" + varName.charAt(0).toUpperCase() + varName.slice(1)] = function()
 				{
-					return this[varName];
+					return local[varName];
 				}
 			},
 			'setter':function(varName)
 			{
-				this[varName] = this[varName] || '';
+				var local;
+				
+				this.private = this.private || {};
+				this.private[varName] = this.private[varName] || null;
+				
+				local = this.private;
+				
 				this["set" + varName.charAt(0).toUpperCase() + varName.slice(1)] = function(value)
 				{
-					this[varName] = value;
+					local[varName] = value;
 					return;
 				}
 			}		
@@ -60,12 +74,7 @@
 		}
 		return _;
 	}
-	
-	n.Class.prototype.extend = function()
-	{
-		alert("extending");
-	}
-	
+		
 	n.Jboxes = [];
 	n.Main = function(){};
 	
