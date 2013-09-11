@@ -19,7 +19,7 @@
 				this.init();
 			}
 			
-			delete self.private;
+			delete this.private;
 						
 		})).prototype = {
 			'init':function(){},
