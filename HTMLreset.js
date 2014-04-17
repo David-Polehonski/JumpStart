@@ -63,3 +63,27 @@ J.Jboxes.push(new HTML5());
 /*Array.indexOf*/
 if(!Array.prototype.indexOf){Array.prototype.indexOf=function(s){try{var j=this.length,a=(!isNaN(arguments[1]))?arguments[1]:null||null;var i=(a != null)?a:0;for(i;i<j;i++){if(this[i]==s){return i;}}return -1;}catch(e){console.log("indexOf: ERROR"+e);return -1;}}};
 
+// Poly fill BIND courtesy of MDN
+if (!Function.prototype.bind) {
+	Function.prototype.bind = function (oThis) {
+	if (typeof this !== "function") {
+		// closest thing possible to the ECMAScript 5 internal IsCallable function
+		throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
+	}
+
+	var aArgs = Array.prototype.slice.call(arguments, 1), 
+	    fToBind = this, 
+	    fNOP = function () {},
+	    fBound = function () {
+	    return fToBind.apply(this instanceof fNOP && oThis
+	                             ? this
+	                             : oThis,
+	                             aArgs.concat(Array.prototype.slice.call(arguments)));
+	};
+
+	fNOP.prototype = this.prototype;
+	fBound.prototype = new fNOP();
+
+	return fBound;
+	};
+}
