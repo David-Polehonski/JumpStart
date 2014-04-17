@@ -10,15 +10,25 @@
 				this.setState("disable");
 			}
 			var _self = this;
-			this.checkbox.addEventListener("click",function(evt){
-				console.log(_self);
+			
+			function listener(evt){
 				_self["ontoggle"](_self);
 				if(_self.checkbox.checked){
 					_self.setState("enable");
 				}else{
 					_self.setState("disable");
 				}
-			},false);
+			}
+			
+			//	IE8 Compatability
+			if(this.checkbox.addEventListener){
+				this.checkbox.addEventListener("click",listener,false);	
+			}else{
+				this.checkbox.onclick = function(e){
+					var E = e || window.event;
+					listener(E);
+				};
+			}			
 		}
 		n.checkboxTrigger.prototype.getState = function(){
 			if(this.checkbox.checked){
