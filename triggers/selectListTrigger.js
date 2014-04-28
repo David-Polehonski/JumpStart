@@ -11,9 +11,10 @@
 					_self.setState(_self.getState());
 				});
 			}else{
-				this.select.onchange = function(){
+				
+				this.select.attachEvent('onchange',function(){
 					_self.setState(_self.getState());
-				};
+				});
 			}
 		};
 		

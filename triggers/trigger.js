@@ -28,7 +28,7 @@
 		}
 		n.trigger.prototype.getState = function(){throw("Unimplemented method");}
 		n.trigger.prototype.setState = function(newState){
-			this.state = newState
+			this.state = newState;
 			if(this.events.indexOf(this.state) != -1){
 				try{
 					this["on" + this.state](this);
