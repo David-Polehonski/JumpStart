@@ -18,46 +18,10 @@
 			}else{
 				this.init();
 			}
-			
-			delete this.private;
 						
 		})).prototype = {
 			'init':function(){},
-			'toString':function(){return 'Class';},
-			'accessors':function(varName)
-			{
-				this.getter(varName);
-				this.setter(varName);
-			},
-			'getter':function(varName)
-			{
-				var local;
-				
-				this.private = this.private || {};
-				this.private[varName] = this.private[varName] || null;
-				
-				local = this.private;
-				
-				this["get" + varName.charAt(0).toUpperCase() + varName.slice(1)] = function()
-				{
-					return local[varName];
-				}
-			},
-			'setter':function(varName)
-			{
-				var local;
-				
-				this.private = this.private || {};
-				this.private[varName] = this.private[varName] || null;
-				
-				local = this.private;
-				
-				this["set" + varName.charAt(0).toUpperCase() + varName.slice(1)] = function(value)
-				{
-					local[varName] = value;
-					return;
-				}
-			}		
+			'toString':function(){return 'Class';}				
 		}
 		_.extend = function(o)
 		{
@@ -75,16 +39,27 @@
 		return _;
 	}
 		
-	n.Jboxes = [];
+	//n.Jboxes = [];
 	n.Main = function(){};
 	
+    var Jboxes = [];
+    n.JumpStart = function(obj){
+        Jboxes.push(obj);
+    }
+    
 	Start = function(e) 
 	{
-		var i = 0,
-			l = n.Jboxes.length;
+		var i = 0, l = Jboxes.length;
+        
 		for (i; i< l; i+=1){
-			n.Jboxes[i].Jump();	
-			n[n.Jboxes[i].name] = n.Jboxes[i];
+			//   If it contains a Jump() then Jumpstart it.
+            if(Jboxes[i].Jump){
+                Jboxes[i].Jump(n);
+            }
+            //  If it contains a 'name' then register it.
+            if(n[Jboxes[i].name]){
+                n[Jboxes[i].name] = Jboxes[i];
+            }
 		}
 		n.Main();
 	}
@@ -92,11 +67,8 @@
 	if(window.addEventListener){	
 		window.addEventListener('load',function(e){Start(e);},false);
 	}else{
-		window.onload = function(e){
-			"use strict";
-			var E = e || window.event;
-			Start(E);
-		}
+		window.attachEvent('onload',function(e){"use strict"; var E = e || window.event; Start(E);});
 	}
+    
 	return n;
 })(window.J = window.J || {})
