@@ -1,10 +1,14 @@
 (function(n){
 	if(J && n.trigger){
 		n.selectListTrigger = new J.Class().extend(n.trigger);
-		n.selectListTrigger.prototype.init = function(selectElement,arrayOfValues){
+		n.selectListTrigger.prototype.init = function(selectElement,arrayOfValues,invert){
+			
 			this.select = selectElement;
 			this.triggerValues = arrayOfValues;
 			this.setState(this.getState());
+			
+			this.inverted = invert || false;
+			
 			var _self = this;
 			if(this.select.addEventListener){
 				this.select.addEventListener("change",function(){
@@ -24,7 +28,7 @@
 		
 		n.selectListTrigger.prototype.getState = function(){
 			var selected = this.getSelected();
-			if(this.triggerValues.indexOf(selected.value) >= 0){
+			if((this.triggerValues.indexOf(selected.value) >= 0) != this.inverted){
 				return "enable";
 			}else{
 				return "disable";
