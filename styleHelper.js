@@ -1,18 +1,28 @@
 // JavaScript Documentvar 
-styleHelper = new J.Class()
+var styleHelper = new J.Class()
 
-styleHelper.prototype.xBrowserGetStyles = function(styleBlock)
-{
-	if(typeof(styleBlock.sheet) != "undefined")
-	{
+styleHelper.prototype.Jump = function(J){
+    var styles;
+    
+    this.name = "styles";
+    styles = this.createNewStyleElement();
+    this.getStyles = function(){
+        return styles;
+    }
+}
+
+styleHelper.prototype.init = function(){
+    return this;
+}
+
+styleHelper.prototype.xBrowserGetStyles = function(styleBlock){
+	if(typeof(styleBlock.sheet) != "undefined"){
 		var styleRules = styleBlock.sheet 
-	}else if (typeof(styleBlock.styleSheet) != "undefined")
-	{
+	}else if (typeof(styleBlock.styleSheet) != "undefined"){
 		styleBlock.sheet = styleBlock.styleSheet;
 		styleBlock.sheet.cssRules = styleBlock.styleSheet.rules;
 		var styleRules = styleBlock.sheet;
-	}else
-	{
+	}else{
 		return null;	
 	}
 	
@@ -38,13 +48,13 @@ styleHelper.prototype.xBrowserGetStyles = function(styleBlock)
 	return styleRules;
 }
 
-styleHelper.prototype.createNewStyleElement = function() 
-{
+styleHelper.prototype.createNewStyleElement = function(){
 	styleBlock = document.getElementsByTagName('head')[0].appendChild(document.createElement('style'));
 	return this.xBrowserGetStyles(styleBlock);
 }
 
-styleHelper.prototype.getElementStyleSheet = function(styleBlock)
-{
+styleHelper.prototype.getElementStyleSheet = function(styleBlock){
 	return this.xBrowserGetStyles(styleBlock);
 }
+
+J.JumpStart(new styleHelper());

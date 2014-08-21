@@ -57,7 +57,7 @@
                 Jboxes[i].Jump(n);
             }
             //  If it contains a 'name' then register it.
-            if(n[Jboxes[i].name]){
+            if(Jboxes[i].name){
                 n[Jboxes[i].name] = Jboxes[i];
             }
 		}
