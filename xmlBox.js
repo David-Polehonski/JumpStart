@@ -75,4 +75,4 @@ xhr.prototype.send = function(id){
 	}
 }
 
-J.Jboxes.push(new xhr());
+J.JumpStart(new xhr());

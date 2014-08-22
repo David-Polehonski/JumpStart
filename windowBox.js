@@ -175,4 +175,4 @@ win.prototype.appendContent = function(node,winID){
 |	Always End with instantiation
 |**************************************************|
 */
-J.Jboxes.push(new win());
+J.JumpStart(new win());

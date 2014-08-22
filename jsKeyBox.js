@@ -123,4 +123,4 @@ jsKeyBox.prototype.execute = function(){
 
 //jsKeyBox.prototype.
 
-J.Jboxes.push(new jsKeyBox());
+J.JumpStart(new jsKeyBox());
