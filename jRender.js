@@ -15,7 +15,7 @@
             dataAttributes;
         
         dataObj = (typeof dataObj === 'undefined') ? 'default' : dataObj;
-            
+        
         function bindData(elem) {
             var newNode;
             // If the element contains a data-bind attribute then insert data from the object dataObject.
@@ -25,11 +25,11 @@
                     template.addBoundParameter(elem.getAttribute(BIND), elem);
                     template.setInputNode(
                         elem.getAttribute(BIND),
-                        !!dataObj[elem.getAttribute(BIND)] ? dataObj[elem.getAttribute(BIND)] : ''
+                        template.evaluate(elem.getAttribute(BIND))
                     );
                     break;
                 default:
-                    newNode = document.createTextNode(!!dataObj[elem.getAttribute(BIND)] ? dataObj[elem.getAttribute(BIND)] : '');
+                    newNode = document.createTextNode(template.evaluate(elem.getAttribute(BIND)));
                     template.addBoundParameter(elem.getAttribute(BIND), elem.appendChild(newNode));
                     break;
                 }
@@ -132,6 +132,28 @@
         }
     };
     
+    J.Template.prototype.evaluate = function (param, context) {
+        // Test a parameter string and evaluate if it exists in the data context.
+        var current;
+        
+        if (typeof context === "undefined") {
+            context = this.dataContext;
+        }
+        
+        param = param.split(".");        
+        current = param.shift();
+        
+        if (typeof context[current] !== "undefined") {
+            switch (typeof context[current]) {
+            case "function":
+                return context[current]();
+            case "object":
+                return this.evaluate(param.join('.'), context[current]);
+            default:
+                return context[current];
+            }
+        }
+    };
     J.Template.prototype.evaluateInterpolation = function (string) {
         var testExp = /(?:\{)([\D\W]+)(\})/;
         string = string.replace(testExp, this.dataContext[string.match(testExp)[1]]);
@@ -143,6 +165,7 @@
             return !!this.dataContext[string.match(testExp)[1]];
         }
     };
+    
     // Default text node parameter binding functions.
     J.Template.prototype.getTextNode = function (name) {
         return this.nodes[name].textContent; // Return the string content of the text node containing the bound value.
