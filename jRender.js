@@ -3,10 +3,15 @@
 */
 (function (J) {
     "use strict";
+    
     var BIND = 'data-j-bind',
         ATTRIBUTE = 'data-j-attribute';
     // J.render accepts a template element, root node definition and a dataObject to use as a data context.
-    J.render = function (templateNode, rootElement, dataObj) {
+    function capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+    
+    J.render = function (templateNode, dataObj, rootElement) {
         // Only Accepts HTML5 Templates.
         var i = 0,
             template = new J.Template(),
@@ -17,16 +22,14 @@
         dataObj = (typeof dataObj === 'undefined') ? 'default' : dataObj;
         
         function bindData(elem) {
-            var newNode;
+            var newNode, set;
             // If the element contains a data-bind attribute then insert data from the object dataObject.
             if (!!elem.getAttribute(BIND)) {
                 switch (elem.nodeName) {
                 case "INPUT":
-                    template.addBoundParameter(elem.getAttribute(BIND), elem);
-                    template.setInputNode(
-                        elem.getAttribute(BIND),
-                        template.evaluate(elem.getAttribute(BIND))
-                    );
+                case "SELECT":
+                    set = template.addBoundParameter(elem.getAttribute(BIND), elem);
+                    set(template.evaluate(elem.getAttribute(BIND)));
                     break;
                 default:
                     newNode = document.createTextNode(template.evaluate(elem.getAttribute(BIND)));
@@ -56,14 +59,14 @@
         }
                 
         if (!templateNode.content) {
-            throw ("J.Render: Will only accept HTML5 Templates");
-        }
-        
-        if (!templateNode.content.querySelector(rootElement)) {
+            template.setTemplateElement(templateNode);
+        } else if (!templateNode.content.querySelector(rootElement)) {
             throw ("J.Render: Template doesn't contain specified rootElement " + rootElement);
+        } else {
+            // It's an HTML5 Template, import it's specified root node.
+            template.setTemplateElement(document.importNode(templateNode.content.querySelector(rootElement), true));
         }
-        
-        template.setTemplateElement(document.importNode(templateNode.content.querySelector(rootElement), true));
+                
         template.setDataContext(dataObj);
         
         dataElements = template.templateElement.querySelectorAll("[" + BIND + "]");
@@ -84,7 +87,10 @@
     J.Template.prototype.init = function (templateElement, dataContext) {
         this.nodes = {};
         this.setTemplateElement(templateElement);
-        this.setDataContext(dataContext);
+        
+        if (typeof dataContext !== "undefined") {
+            this.setDataContext(dataContext);
+        }
     };
     
     // Sets the template element.
@@ -94,16 +100,26 @@
     
     // Sets the template element.
     J.Template.prototype.setDataContext = function (dataContext) {
-        this.dataContext = dataContext;
+        // If the datacontext has been set before, update all bound params.
+        var name;
+        if (typeof this.dataContext !== "undefined") {
+            // Now update the internal reference.
+            this.dataContext = dataContext;
+            for (name in this.nodes) {
+                if (this.nodes.hasOwnProperty(name)) {
+                    this['set' + capitalizeFirstLetter(name)](this.evaluate(name));
+                }
+            }
+        } else {
+            // Now update the internal reference.
+            this.dataContext = dataContext;
+        }
+        
     };
     
     // Adds a data bound parameter with getters and setters to the template API.
     J.Template.prototype.addBoundParameter = function (name, node) {
         // Adds methods for manipulating an injected parameter.
-        function capitalizeFirstLetter(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-        }
-        
         if (!this.templateElement.contains(node)) {
             throw ("J.Template must contain argument node " + node);
         }
@@ -129,7 +145,16 @@
                 return this.setInputNode(name, newValue);
             };
             break;
+        case "SELECT": // These getters and setters are for bound values, not attributes or options.
+            this["get" + capitalizeFirstLetter(name)] = function () {
+                return this.getSelectNode(name);
+            };
+            this["set" + capitalizeFirstLetter(name)] = function (newValue) {
+                return this.setSelectNode(name, newValue);
+            };
+            break;
         }
+        return this["set" + capitalizeFirstLetter(name)].bind(this);
     };
     
     J.Template.prototype.evaluate = function (param, context) {
@@ -140,7 +165,7 @@
             context = this.dataContext;
         }
         
-        param = param.split(".");        
+        param = param.split(".");
         current = param.shift();
         
         if (typeof context[current] !== "undefined") {
@@ -189,6 +214,26 @@
         this.nodes[name].value = value;
         return;
     };
+    
+    // I/O Functions for params bound to input elements.    
+    J.Template.prototype.getSelectNode = function (name) {
+        return this.nodes[name].options[this.nodes[name].selectedIndex].value; // Return the string content of the options node containing the bound value.
+    };
+    J.Template.prototype.setSelectNode = function (name, value) {
+        var i = 0;
+        value = (typeof value === 'undefined') ? '' : value;
+        
+        do {
+            if (this.nodes[name].options[i].value === value) {
+                this.nodes[name].selectedIndex = i;
+                return;
+            }
+            i += 1; // Onto the next.
+        } while (i < this.nodes[name].options.length);
+        
+        return;
+    };
+    
     
     J.Template.prototype.render = function (targetElement) {
         targetElement.appendChild(this.templateElement);
