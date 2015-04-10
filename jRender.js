@@ -5,7 +5,8 @@
     "use strict";
     
     var BIND = 'data-j-bind',
-        ATTRIBUTE = 'data-j-attribute';
+        ATTRIBUTE = 'data-j-attribute',
+        TARGET = 'data-j-target';
     // J.render accepts a template element, root node definition and a dataObject to use as a data context.
     function capitalizeFirstLetter(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
@@ -19,20 +20,39 @@
             boundElements,
             dataAttributes;
         
-        dataObj = (typeof dataObj === 'undefined') ? 'default' : dataObj;
+        dataObj = (typeof dataObj === "undefined") ? {} : dataObj; // Create a blank data context
         
         function bindData(elem) {
             var newNode, set;
             // If the element contains a data-bind attribute then insert data from the object dataObject.
+            if (elem.hasAttribute(TARGET)) {
+                set = template.addBoundParameter(elem.getAttribute(BIND), elem);
+                set(template.evaluate(elem.getAttribute(BIND)));
+                return true;
+            }
+            
             if (!!elem.getAttribute(BIND)) {
                 switch (elem.nodeName) {
                 case "INPUT":
                 case "SELECT":
                     set = template.addBoundParameter(elem.getAttribute(BIND), elem);
-                    set(template.evaluate(elem.getAttribute(BIND)));
+                    if (!template.evaluate(elem.getAttribute(BIND))) {
+                        set(elem.value);
+                    } else {
+                        set(template.evaluate(elem.getAttribute(BIND)));
+                    }
                     break;
                 default:
-                    newNode = document.createTextNode(template.evaluate(elem.getAttribute(BIND)));
+                    newNode = template.evaluate(elem.getAttribute(BIND));
+                    
+                    if (!template.evaluate(elem.getAttribute(BIND))) {
+                        // If evaluation fails, scan the element for data.
+                        if (elem.textContent !== "") {
+                            newNode = elem.textContent;
+                            elem.textContent = "";
+                        }
+                    }
+                    newNode = document.createTextNode(newNode);
                     template.addBoundParameter(elem.getAttribute(BIND), elem.appendChild(newNode));
                     break;
                 }
@@ -51,11 +71,18 @@
                 newAttrObj.name = data.jAttribute.split("=")[0];
                 newAttrObj.value = data.jAttribute.split("=")[1];
             }
+            
             if (template.requiresInterpolation(newAttrObj.value)) {
                 newAttrObj.value = template.evaluateInterpolation(newAttrObj.value);
             }
-            elem.setAttribute(newAttrObj.name, newAttrObj.value);
-            elem.removeAttribute(ATTRIBUTE);
+            // If they attribute already exists and the value wasn't interpolated.
+            if (elem.hasAttribute(newAttrObj.name) && template.requiresInterpolation(newAttrObj.value)) {
+                return;
+            } else {
+                elem.setAttribute(newAttrObj.name, newAttrObj.value);
+                elem.removeAttribute(ATTRIBUTE);
+                return;
+            }
         }
                 
         if (!templateNode.content) {
@@ -117,6 +144,48 @@
         
     };
     
+    J.Template.prototype.getter = function (name) {
+        var i = 0;
+        for (i; i < this.nodes[name].length; i += 1) {
+            switch (this.nodes[name][i].nodeName) {
+            case '#text':
+                return this.getTextNode(this.nodes[name][i]);
+            case "INPUT":
+                return this.getInputNode(this.nodes[name][i]);
+            case "SELECT": // These getters and setters are for bound values, not attributes or options.
+                return this.getSelectNode(this.nodes[name][i]);
+            }
+        }
+    };
+    
+    J.Template.prototype.setter = function (name, newValue) {
+        var i = 0;
+        for (i; i < this.nodes[name].length; i += 1) {
+            
+            if (!!this.nodes[name][i].hasAttribute && this.nodes[name][i].hasAttribute(TARGET)) {
+                // Redirect binding to elements attribute instead.
+                if (this.nodes[name][i].hasAttribute(this.nodes[name][i].getAttribute(TARGET))) {
+                    this.setAttributeValue(this.nodes[name][i], this.nodes[name][i].getAttribute(TARGET), newValue);
+                } else {
+                    throw ("Missing bound attribute in TARGET directive. " + this.nodes[name][i].getAttribute(TARGET));
+                }
+            } else {
+                // Switch through default node behaviours
+                switch (this.nodes[name][i].nodeName) {
+                case '#text':
+                    this.setTextNode(this.nodes[name][i], newValue);
+                    break;
+                case "INPUT":
+                    this.setInputNode(this.nodes[name][i], newValue);
+                    break;
+                case "SELECT": // These getters and setters are for bound values, not attributes or options.
+                    this.setSelectNode(this.nodes[name][i], newValue);
+                    break;
+                }
+            }
+        }
+    };
+        
     // Adds a data bound parameter with getters and setters to the template API.
     J.Template.prototype.addBoundParameter = function (name, node) {
         // Adds methods for manipulating an injected parameter.
@@ -125,35 +194,19 @@
         }
         
         if (this.nodes[name] === undefined) {
-            this.nodes[name] = node;
+            this.nodes[name] = [node];
+            
+            this["get" + capitalizeFirstLetter(name)] = function () {
+                return this.getter(name);
+            };
+            this["set" + capitalizeFirstLetter(name)] = function (newValue) {
+                return this.setter(name, newValue);
+            };
+            
+        } else {
+            this.nodes[name].push(node);
         }
         
-        switch (node.nodeName) {
-        case '#text':
-            this["get" + capitalizeFirstLetter(name)] = function () {
-                return this.getTextNode(name);
-            };
-            this["set" + capitalizeFirstLetter(name)] = function (newValue) {
-                return this.setTextNode(name, newValue);
-            };
-            break;
-        case "INPUT":
-            this["get" + capitalizeFirstLetter(name)] = function () {
-                return this.getInputNode(name);
-            };
-            this["set" + capitalizeFirstLetter(name)] = function (newValue) {
-                return this.setInputNode(name, newValue);
-            };
-            break;
-        case "SELECT": // These getters and setters are for bound values, not attributes or options.
-            this["get" + capitalizeFirstLetter(name)] = function () {
-                return this.getSelectNode(name);
-            };
-            this["set" + capitalizeFirstLetter(name)] = function (newValue) {
-                return this.setSelectNode(name, newValue);
-            };
-            break;
-        }
         return this["set" + capitalizeFirstLetter(name)].bind(this);
     };
     
@@ -175,65 +228,73 @@
             case "object":
                 return this.evaluate(param.join('.'), context[current]);
             default:
-                return context[current];
+                if (typeof context[current] !== "undefined") {
+                    return context[current];
+                } else {
+                    return false;
+                }
             }
         }
     };
+    
     J.Template.prototype.evaluateInterpolation = function (string) {
-        var testExp = /(?:\{)([\D\W]+)(\})/;
-        string = string.replace(testExp, this.dataContext[string.match(testExp)[1]]);
+        var testExp = /(?:\{)([\D\W\.]+)(\})/,
+            value = this.evaluate(string.match(testExp)[1]);
+        
+        if (!!value) {
+            string = string.replace(testExp, value);
+        }
+        
         return string;
     };
     J.Template.prototype.requiresInterpolation = function (string) {
-        var testExp = /(?:\{)([\D\W]+)(\})/;
-        if (testExp.test(string)) {
-            return !!this.dataContext[string.match(testExp)[1]];
-        }
+        var testExp = /(?:\{)([\D\W\.]+)(\})/;
+        return !!testExp.test(string);
     };
     
     // Default text node parameter binding functions.
-    J.Template.prototype.getTextNode = function (name) {
-        return this.nodes[name].textContent; // Return the string content of the text node containing the bound value.
+    J.Template.prototype.getTextNode = function (node) {
+        return node.nodeValue; // Return the string content of the text node containing the bound value.
     };
-    J.Template.prototype.setTextNode = function (name, value) {
+    J.Template.prototype.setTextNode = function (node, value) {
         value = (typeof value === 'undefined') ? '' : value;
-        var newNode = document.createTextNode(value),
-            tempParent = this.nodes[name].parentNode;
-        
-        tempParent.removeChild(this.nodes[name]);
-        this.nodes[name] = tempParent.appendChild(newNode);
+        node.nodeValue = value;
         return;
     };
     
     // I/O Functions for params bound to input elements.    
-    J.Template.prototype.getInputNode = function (name) {
-        return this.nodes[name].value; // Return the string content of the text node containing the bound value.
+    J.Template.prototype.getInputNode = function (node) {
+        return node.value; // Return the string content of the text node containing the bound value.
     };
-    J.Template.prototype.setInputNode = function (name, value) {
+    J.Template.prototype.setInputNode = function (node, value) {
         value = (typeof value === 'undefined') ? '' : value;
-        this.nodes[name].value = value;
+        node.value = value;
         return;
     };
     
     // I/O Functions for params bound to input elements.    
-    J.Template.prototype.getSelectNode = function (name) {
-        return this.nodes[name].options[this.nodes[name].selectedIndex].value; // Return the string content of the options node containing the bound value.
+    J.Template.prototype.getSelectNode = function (node) {
+        return node.options[node.selectedIndex].value; // Return the string content of the options node containing the bound value.
     };
-    J.Template.prototype.setSelectNode = function (name, value) {
+    J.Template.prototype.setSelectNode = function (node, value) {
         var i = 0;
         value = (typeof value === 'undefined') ? '' : value;
         
         do {
-            if (this.nodes[name].options[i].value === value) {
-                this.nodes[name].selectedIndex = i;
+            if (node.options[i].value === value) {
+                node.selectedIndex = i;
                 return;
             }
             i += 1; // Onto the next.
-        } while (i < this.nodes[name].options.length);
+        } while (i < node.options.length);
         
         return;
     };
     
+    J.Template.prototype.setAttributeValue = function (node, attrName, value) {
+        node.setAttribute(attrName, value);
+        return;
+    };
     
     J.Template.prototype.render = function (targetElement) {
         targetElement.appendChild(this.templateElement);
