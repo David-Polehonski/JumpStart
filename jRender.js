@@ -221,7 +221,7 @@
         param = param.split(".");
         current = param.shift();
         
-        if (typeof context[current] !== "undefined") {
+        if (context.hasOwnProperty(current)) {
             switch (typeof context[current]) {
             case "function":
                 return context[current]();
