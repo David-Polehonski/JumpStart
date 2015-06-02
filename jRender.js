@@ -6,11 +6,47 @@
     
     var BIND = 'data-j-bind',
         ATTRIBUTE = 'data-j-attribute',
-        TARGET = 'data-j-target';
+        TARGET = 'data-j-target',
+        JTemplateException = new J.Class();
     // J.render accepts a template element, root node definition and a dataObject to use as a data context.
     function capitalizeFirstLetter(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
+    
+    JTemplateException.prototype = {
+        "init": function (message, detail) {
+            this.detail = {};
+            this.message = '';
+            
+            if (!!message) {
+                this.setMessage(message);
+            }
+            if (!!detail) {
+                this.setDetail(detail);
+            }
+                    
+            return this;
+        },
+        "setMessage": function (newMsg) {
+            this.message = newMsg;
+        },
+        "setDetail": function (detailObj) {
+            var detail = {
+                'origin': 'J.Template'
+            },  keyName;
+            
+            for (keyName in detailObj) {
+                if (detailObj.hasOwnProperty(keyName) && !detail.hasOwnProperty(keyName)) {
+                    detail[keyName] = detailObj[keyName];
+                }
+            }
+            this.detail = detail;
+        },
+        "throwException": function () {
+            window.console.log(this.detail);
+            throw "J.Template Exception: " + this.message;
+        }
+    };
     
     J.render = function (templateNode, dataObj, rootElement) {
         // Only Accepts HTML5 Templates.
@@ -190,7 +226,11 @@
     J.Template.prototype.addBoundParameter = function (name, node) {
         // Adds methods for manipulating an injected parameter.
         if (!this.templateElement.contains(node)) {
-            throw ("J.Template must contain argument node " + node);
+            var e = new JTemplateException("J.Template must contain argument node", {
+                'node': node,
+                'element': this.templateElement
+            });
+            e.throwException();
         }
         
         if (this.nodes[name] === undefined) {
