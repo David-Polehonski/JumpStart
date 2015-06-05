@@ -196,6 +196,7 @@
     
     J.Template.prototype.setter = function (name, newValue) {
         var i = 0;
+        // Loop all bound nodes and update the bound elements.
         for (i; i < this.nodes[name].length; i += 1) {
             
             if (!!this.nodes[name][i].hasAttribute && this.nodes[name][i].hasAttribute(TARGET)) {
@@ -220,6 +221,13 @@
                 }
             }
         }
+        // Update the data context last:
+        try{
+            this.updateDataContext(name, newValue);
+        } catch (e) {
+            console.log(e);
+        }
+        
     };
         
     // Adds a data bound parameter with getters and setters to the template API.
@@ -242,7 +250,6 @@
             this["set" + capitalizeFirstLetter(name)] = function (newValue) {
                 return this.setter(name, newValue);
             };
-            
         } else {
             this.nodes[name].push(node);
         }
@@ -250,6 +257,26 @@
         return this["set" + capitalizeFirstLetter(name)].bind(this);
     };
     
+    J.Template.prototype.updateDataContext = function (name, value, context) {
+        var current;
+        
+        if (typeof context === "undefined") {
+            context = this.dataContext;
+        }
+        
+        name = name.split(".");
+        current = name.shift();
+        
+        //if (context.hasOwnProperty(current)) {
+            switch (typeof context[current]) {
+            case "object":
+                return !!context[current] ? this.evaluate(param.join('.'), context[current]) : "";
+            default:
+                return context[current] = value;
+            }
+        //}
+    }
+        
     J.Template.prototype.evaluate = function (param, context) {
         // Test a parameter string and evaluate if it exists in the data context.
         var current;
@@ -266,7 +293,7 @@
             case "function":
                 return context[current]();
             case "object":
-                return this.evaluate(param.join('.'), context[current]);
+                return !!context[current] ? this.evaluate(param.join('.'), context[current]) : "";
             default:
                 if (typeof context[current] !== "undefined") {
                     return context[current];
