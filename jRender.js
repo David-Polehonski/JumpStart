@@ -258,7 +258,7 @@
         switch (node.nodeName) {
         case 'INPUT':
             node.addEventListener('change', function (evt) {
-                this.updateDataContext(name, evt.currentTarget.value);
+                this.setter(name, evt.currentTarget.value);
             }.bind(this));
             break;
         case 'SELECT':
@@ -298,13 +298,13 @@
         if (typeof context === "undefined") {
             context = this.dataContext;
         }
-        
+                
         name = name.split(".");
         current = name.shift();
         
         switch (typeof context[current]) {
         case "object":
-            return !!context[current] ? this.evaluate(name.join('.'), context[current]) : "";
+            return !!context[current] ? this.evaluate(name.join('.'), context[current]) : (context[current] = value);
         default:
             context[current] = value;
             return;
