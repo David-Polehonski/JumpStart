@@ -149,6 +149,7 @@
         
     J.Template.prototype.init = function (templateElement, dataContext) {
         this.nodes = {};
+        this.observers = [];
         this.setTemplateElement(templateElement);
         
         if (typeof dataContext !== "undefined") {
@@ -198,7 +199,6 @@
         var i = 0;
         // Loop all bound nodes and update the bound elements.
         for (i; i < this.nodes[name].length; i += 1) {
-            
             if (!!this.nodes[name][i].hasAttribute && this.nodes[name][i].hasAttribute(TARGET)) {
                 // Redirect binding to elements attribute instead.
                 if (this.nodes[name][i].hasAttribute(this.nodes[name][i].getAttribute(TARGET))) {
@@ -222,10 +222,10 @@
             }
         }
         // Update the data context last:
-        try{
+        try {
             this.updateDataContext(name, newValue);
         } catch (e) {
-            console.log(e);
+            window.console.log(e);
         }
         
     };
@@ -254,6 +254,41 @@
             this.nodes[name].push(node);
         }
         
+        /* Add any eventListeners */
+        switch (node.nodeName) {
+        case 'INPUT':
+            node.addEventListener('change', function (evt) {
+                this.updateDataContext(name, evt.currentTarget.value);
+            }.bind(this));
+            break;
+        case 'SELECT':
+            break;
+        case 'TEXTAREA':
+            break;
+        default:
+            // For non-input elements, add mutation observers.
+            if (!!window.MutationObserver) {
+                this.observers.push(
+                    (function (target) {
+                        // create an observer instance
+                        var observer = new window.MutationObserver(function (mutations) {
+                                mutations.forEach(function (mutation) {
+                                    window.console.log(mutation.type);
+                                });
+                            }),
+                            config = { attributes: true, childList: true, characterData: true }; // configuration of the observer:
+
+                        // pass in the target node, as well as the observer options
+                        observer.observe(target, config);
+
+                        // later, you can stop observing
+                        return observer;
+                    }(node))
+                );
+            }
+        }
+        
+        
         return this["set" + capitalizeFirstLetter(name)].bind(this);
     };
     
@@ -267,15 +302,15 @@
         name = name.split(".");
         current = name.shift();
         
-        //if (context.hasOwnProperty(current)) {
-            switch (typeof context[current]) {
-            case "object":
-                return !!context[current] ? this.evaluate(param.join('.'), context[current]) : "";
-            default:
-                return context[current] = value;
-            }
-        //}
-    }
+        switch (typeof context[current]) {
+        case "object":
+            return !!context[current] ? this.evaluate(name.join('.'), context[current]) : "";
+        default:
+            context[current] = value;
+            return;
+        }
+        
+    };
         
     J.Template.prototype.evaluate = function (param, context) {
         // Test a parameter string and evaluate if it exists in the data context.
@@ -368,6 +403,13 @@
         return;
     };
     J.Template.prototype.remove = function () {
+        
+        if (this.observers.length > 0) {
+            this.observers.forEach(function (observer) {
+                observer.disconnect();
+            });
+        }
+        
         this.templateElement.parentNode.removeChild(this.templateElement);
     };
 }(window.J));
