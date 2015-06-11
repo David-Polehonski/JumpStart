@@ -403,13 +403,18 @@
         return;
     };
     J.Template.prototype.remove = function () {
+        var parent = this.templateElement.parentNode,
+            child = this.templateElement;
         
         if (this.observers.length > 0) {
             this.observers.forEach(function (observer) {
                 observer.disconnect();
             });
         }
-        
-        this.templateElement.parentNode.removeChild(this.templateElement);
+                
+        parent.removeChild(child);
+        //if (parent.removeChild !== null) {
+        //}
+        return;
     };
 }(window.J));
