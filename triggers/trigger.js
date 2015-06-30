@@ -2,16 +2,16 @@
 	trigger: primary trigger interface class.
 	package: JavaJump.triggers.	
 */
-(function (n, J) {
+(function (J) {
     "use strict";
     /* Package definition */
     J.triggers = J.triggers || {};
-    
+    var n = J.triggers,
+        e = 0,
+        noop = function () {};
 	if (n) {
         
-        var e = 0, noop = function () {};
-        
-		n.trigger = new J.Class();
+        n.trigger = new J.Class();
 		/*@
 			events: class constant variable possible states and events.
 			type: Array<string>

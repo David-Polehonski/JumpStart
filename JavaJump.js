@@ -8,11 +8,10 @@
 		var a;
 		(a = function () {
 			if (arguments.length > 0) {
-				this.init.apply(this, arguments);
+				return this.init.apply(this, arguments) || this;
 			} else {
-				this.init();
+				return this.init() || this;
 			}
-						
 		}).prototype = {
 			'init': function () {},
 			'toString': function () {return 'Class'; }
@@ -50,7 +49,7 @@
                 n[Jboxes[i].name] = Jboxes[i];
             }
 		}
-		n.Main();
+		n.Main(n);
 	}
 		
 	if (window.addEventListener) {
