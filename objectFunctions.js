@@ -16,7 +16,7 @@
         Verifies variable is an Object.
     */
     JObject.prototype.isObject = function (variable) {
-        if (typeof (variable) !== "object") {
+        if (!!variable && typeof (variable) !== "object") {
             return false;
         }
         return true;
