@@ -739,7 +739,7 @@
     
     J.JumpStart(new HTML());
     
-})(window.J);
+}(window.J));
 
 
 

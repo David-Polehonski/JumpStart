@@ -1,74 +1,63 @@
-(function(nameSpace)
-{
-	var Start,
-		n = nameSpace || {};
+(function (nameSpace) {
+    "use strict";
+	var n = nameSpace || {},
+        Jboxes = [];
 	//	Class() - syntactic sugar function.
-	n.Class = function()
-	{
-		"use strict";
-		// Create a 
-		var _;
-		(_ = (function()
-		{
-			"use strict";
-			
-			if(arguments.length > 0)
-			{
-				this.init.apply(this,arguments);
-			}else{
+	n.Class = function () {
+		// Create a variable 
+		var a;
+		(a = function () {
+			if (arguments.length > 0) {
+				this.init.apply(this, arguments);
+			} else {
 				this.init();
 			}
 						
-		})).prototype = {
-			'init':function(){},
-			'toString':function(){return 'Class';}				
-		}
-		_.extend = function(o)
-		{
-			"use strict";
+		}).prototype = {
+			'init': function () {},
+			'toString': function () {return 'Class'; }
+		};
+		a.extend = function (o) {
 			//Create empty constructor.
-			var temporary = function(){};
+			var Temporary = function () {};
 			//Assign target prototype by reference.
-			temporary.prototype = o.prototype;
+			Temporary.prototype = o.prototype;
 			//Inherit prototype via the temporary constructor.
-			this.prototype = new temporary();
+			this.prototype = new Temporary();
 			//Save the parent prototype's init method.
-			this.prototype.parent = o.prototype;			
+			this.prototype.parent = o.prototype;
 			return this;
-		}
-		return _;
-	}
-		
-	//n.Jboxes = [];
-	n.Main = function(){};
+		};
+		return a;
+	};
 	
-    var Jboxes = [];
-    n.JumpStart = function(obj){
+	n.Main = function () {};
+	
+    n.JumpStart = function (obj) {
         Jboxes.push(obj);
-    }
+    };
     
-	Start = function(e) 
-	{
+    function s(e) {
 		var i = 0, l = Jboxes.length;
         
-		for (i; i< l; i+=1){
+		for (i; i < l; i += 1) {
 			//   If it contains a Jump() then Jumpstart it.
-            if(Jboxes[i].Jump){
+            if (Jboxes[i].Jump) {
                 Jboxes[i].Jump(n);
             }
             //  If it contains a 'name' then register it.
-            if(Jboxes[i].name){
+            if (Jboxes[i].name) {
                 n[Jboxes[i].name] = Jboxes[i];
             }
 		}
 		n.Main();
 	}
 		
-	if(window.addEventListener){	
-		window.addEventListener('load',function(e){Start(e);},false);
-	}else{
-		window.attachEvent('onload',function(e){"use strict"; var E = e || window.event; Start(E);});
+	if (window.addEventListener) {
+		window.addEventListener('load', function (e) { s(e); }, false);
+	} else {
+		window.attachEvent('onload', function (e) { var E = e || window.event; s(E); });
 	}
     
 	return n;
-})(window.J = window.J || {})
+}(window.J = window.J || {}));
