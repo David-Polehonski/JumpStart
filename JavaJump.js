@@ -1,7 +1,7 @@
 (function (nameSpace) {
     "use strict";
 	var n = nameSpace || {},
-        Jboxes = [];
+        j = [];
 	//	Class() - syntactic sugar function.
 	n.Class = function () {
 		// Create a variable 
@@ -32,21 +32,20 @@
 	
 	n.Main = function () {};
 	
-    n.JumpStart = function (obj) {
-        Jboxes.push(obj);
+    n.jumpStart = function (f) {
+        if (!!f && typeof f === "function") {
+            j.push(f);
+        }
     };
     
     function s(e) {
-		var i = 0, l = Jboxes.length;
+		var i = 0, l = j.length, x = 'name';
         
 		for (i; i < l; i += 1) {
-			//   If it contains a Jump() then Jumpstart it.
-            if (Jboxes[i].Jump) {
-                Jboxes[i].Jump(n);
-            }
-            //  If it contains a 'name' then register it.
-            if (Jboxes[i].name) {
-                n[Jboxes[i].name] = Jboxes[i];
+			if (!!j[i][x]) {
+                j[i] = n[j[i][x]] = new j[i](n);
+            } else {
+                j[i] = new j[i](n);
             }
 		}
 		n.Main(n);
