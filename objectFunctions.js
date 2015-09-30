@@ -4,14 +4,13 @@
 (function (J) {
     "use strict";
     var JObject = new J.Class();
-    
-    
+
     JObject.prototype.init = function (variable) {
         if (this.isObject(variable)) {
             this.obj = variable;
         }
     };
-    
+
     /*@objectIsObject
         Verifies variable is an Object.
     */
@@ -39,6 +38,18 @@
         }
         return true;
     };
+    /*@merge
+        Merge Objects together, allowing for object defaults.
+    */
+    JObject.prototype.mergeWith = function (obj, overwrite) {
+        for (var key in obj) {
+            if (!this.obj.hasOwnProperty(key) || !!overwrite) {
+                this.obj[key] = obj[key];
+            }
+        }
+        return this.obj;
+    };
+
     /*@J.object
         objectFunction entry point.
     */
