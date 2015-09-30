@@ -4,8 +4,13 @@
 (function (J) {
     'use strict';
 
-    var _defaults = { }, bg, css;
+    var _defaults = {
+	 	'preserveContent':false,
+		'dialogRootElement':'div',
+		'dialogRootClass':''
+	}, bg, css;
 
+	// PRIVATE STATIC
     function isFlex () {
         var test = document.createElement('div');
         test.style = "display: flex";
@@ -61,6 +66,13 @@
         }
     }
 
+	// PRIVATE INSTANCE
+	function createDialog () {
+		this.dialog = document.createElement(this.config.dialogRootElement);
+		this.dialog.className = 'dialog-window inactive ' + this.config.dialogRootClass;
+		this.content = this.dialog.appendChild(this.content);
+		this.dialog = bg.appendChild(this.dialog);
+	}
 
     if (!J.dialog) { // Test for existance of the dialog object.
 
@@ -74,14 +86,33 @@
             if (!bg) initBg();
             if (!css) initCss();
 
-            config = J.object(config).mergeWith(_defaults);
+            this.config = J.object(config).mergeWith(_defaults);
+			this.content = content.cloneNode(true); // Create Deep Copy of the node.
+			if (!this.config.preserveContent) {
+				content.parentNode.removeChild(content);
+			}
 
+			return this;
         };
 
-        J.dialog.prototype.display = function () {}
-        J.dialog.prototype.hide = function () {}
-        J.dialog.prototype.destroy = function () {}
+        J.dialog.prototype.display = function () {
+			if (!this.dialog) createDialog.bind(this)();
 
+			if (this.dialog.classList.contains('inactive')) {
+				this.dialog.classList.remove('inactive');
+			}
+		};
+
+        J.dialog.prototype.hide = function () {
+			if (!this.dialog.classList.contains('inactive')) {
+				this.dialog.classList.add('inactive');
+			}
+		};
+
+        J.dialog.prototype.destroy = function () {
+			this.dialog.parentNode.removeChild(this.dialog);
+			delete this.dialog;
+		};
 
     }
 }(window.J || {}));
