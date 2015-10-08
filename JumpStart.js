@@ -4,7 +4,7 @@
         j = [];
 	//	Class() - syntactic sugar function.
 	n.Class = function () {
-		// Create a variable 
+		// Create a variable
 		var a;
 		(a = function () {
 			if (arguments.length > 0) {
@@ -29,33 +29,29 @@
 		};
 		return a;
 	};
-	
+
 	n.Main = function () {};
-	
+
     n.jumpStart = function (f) {
         if (!!f && typeof f === "function") {
             j.push(f);
         }
     };
-    
+
     function s(e) {
-		var i = 0, l = j.length, x = 'name';
-        
+		var i = 0, l = j.length;
+
 		for (i; i < l; i += 1) {
-			if (!!j[i][x]) {
-                j[i] = n[j[i][x]] = new j[i](n);
-            } else {
-                j[i] = new j[i](n);
-            }
-		}
+			j[i] = new j[i](n);
+        }
 		n.Main(n);
 	}
-		
+
 	if (window.addEventListener) {
 		window.addEventListener('load', function (e) { s(e); }, false);
 	} else {
 		window.attachEvent('onload', function (e) { var E = e || window.event; s(E); });
 	}
-    
+
 	return n;
 }(window.J = window.J || {}));

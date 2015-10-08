@@ -1,5 +1,6 @@
 function styles (J) {
-	return this.createNewStyleElement();
+	J.styles = this.createNewStyleElement();
+	return this;
 }
 
 styles.prototype.xBrowserGetStyles = function(styleBlock){

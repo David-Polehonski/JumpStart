@@ -13,7 +13,7 @@
 	// PRIVATE STATIC
     function isFlex () {
         var test = document.createElement('div');
-        test.style = "display: flex";
+        test.style.display = "flex";
 
         return test.style.display === "flex";
     }
@@ -67,11 +67,11 @@
     }
 
 	// PRIVATE INSTANCE
-	function createDialog () {
-		this.dialog = document.createElement(this.config.dialogRootElement);
-		this.dialog.className = 'dialog-window inactive ' + this.config.dialogRootClass;
-		this.content = this.dialog.appendChild(this.content);
-		this.dialog = bg.appendChild(this.dialog);
+	function createDialog (inst) {
+		inst.dialog = document.createElement(inst.config.dialogRootElement);
+		inst.dialog.className = 'dialog-window inactive ' + inst.config.dialogRootClass;
+		inst.content = inst.dialog.appendChild(inst.content);
+		inst.dialog = bg.appendChild(inst.dialog);
 	}
 
     if (!J.dialog) { // Test for existance of the dialog object.
