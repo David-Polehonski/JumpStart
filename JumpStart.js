@@ -2,7 +2,7 @@
     "use strict";
 	var n = nameSpace || {},
         j = [],
-		vars;
+		vars = {};
 
 	vars.rootPath = function () {
 		if (!!document.currentScript) {
@@ -53,8 +53,8 @@
     };
 
 	n.var = function (varName) {
-		if (typeof vars[varname] !== 'undefined') {
-			return vars[varname];
+		if (typeof vars[varName] !== 'undefined') {
+			return vars[varName];
 		}
 		return null;
 	};
