@@ -1,0 +1,12 @@
+/*
+	Default Decorative styles for jDialog
+*/
+
+.dialog-container.open {
+	background-color: rgba(255,255,255,0.8);
+}
+
+.dialog-window {
+	background-color: #FFFFFF;
+	box-shadow: 1px 1px 3px 0px #CCCCCC,  0 0 4px -1px #DDDDDD;
+}

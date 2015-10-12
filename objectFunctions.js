@@ -15,7 +15,7 @@
         Verifies variable is an Object.
     */
     JObject.prototype.isObject = function (variable) {
-        if (!!variable && typeof (variable) !== "object") {
+        if (!!variable && typeof variable !== typeof {}) {
             return false;
         }
         return true;
@@ -42,7 +42,7 @@
         Merge Objects together, allowing for object defaults.
     */
     JObject.prototype.mergeWith = function (obj, overwrite) {
-        for (var key in obj) {
+		for (var key in obj) {
             if (!this.obj.hasOwnProperty(key) || !!overwrite) {
                 this.obj[key] = obj[key];
             }

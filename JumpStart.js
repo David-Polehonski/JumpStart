@@ -1,7 +1,20 @@
 (function (nameSpace) {
     "use strict";
 	var n = nameSpace || {},
-        j = [];
+        j = [],
+		vars;
+
+	vars.rootPath = function () {
+		if (!!document.currentScript) {
+			return document.currentScript.src;
+		} else {
+			return function () {
+				var scripts = document.getElementsByTagName('script');
+				return scripts[scripts.length-1].src;
+			}();
+		}
+	}().replace(/\/[a-zA-Z]+\.js$/, '/');
+
 	//	Class() - syntactic sugar function.
 	n.Class = function () {
 		// Create a variable
@@ -31,12 +44,20 @@
 	};
 
 	n.Main = function () {};
+	n.main = function () { this.Main(); };
 
     n.jumpStart = function (f) {
         if (!!f && typeof f === "function") {
             j.push(f);
         }
     };
+
+	n.var = function (varName) {
+		if (typeof vars[varname] !== 'undefined') {
+			return vars[varname];
+		}
+		return null;
+	};
 
     function s(e) {
 		var i = 0, l = j.length;
