@@ -38,21 +38,31 @@
 
 			this.loadCss();
 
+			this.loadConfig();
+
 			return;
+		},
+		'loadConfig': function () {
+			if (J.Dialog.containerAnimationStyle !== null) {
+				this.container.className += ' ' + J.Dialog.containerAnimationStyle;
+			}
+			if (J.Dialog.containerAnimationLength !== null) {
+				this.container.className += ' ' + J.Dialog.containerAnimationLength;
+			}
 		},
 		'loadCss': function () {
 
 			var newStyleSheet = document.createElement('link');
 			newStyleSheet.rel = "stylesheet";
-			newStyleSheet.href = J.var('rootPath') + "ui-css/dialog.css";
+			newStyleSheet.href = J.value('rootPath') + "ui-css/dialog.css";
 
-			_css = document.head.insertBefore(newStyleSheet, document.getElementsByTagName('link')[0]);
+			_css = (document.head || document.getElementsByTagName('head')[0]).insertBefore(newStyleSheet, document.getElementsByTagName('link')[0]);
 
-			J.styles.addRules("html.dialog-lock", ["height: 100%"]);
+			J.styles.addRules("html.dialog-lock", ["height: 100%", "overflow-y: hidden"]);
 
 			J.styles.addRules("html.dialog-lock > body", [
 				"height: 100%",
-				"overflow: hidden"
+				"overflow: visible"
 			]);
 
 			J.styles.addRules(".dialog-container", ["display: none"]);
@@ -112,6 +122,15 @@
 			var newDialog = document.createElement(inst.config.dialogRootElement);
 			newDialog.className = 'dialog-window inactive ' + inst.config.dialogRootClass;
 
+			if (inst.config.animationStyle !== null) {
+				if (inst.config.animationLength === null) {
+					throw('Mis-configured jDialog. animationStyle specified without animationLength.');
+				}
+				newDialog.className += ' ' + inst.config.animationStyle;
+				newDialog.className += ' ' + inst.config.animationLength;
+				inst.animated = true;
+			}
+
 			if (inst.config.contentNode !== null) {
 				newDialog.appendChild(inst.config.contentNode.cloneNode(true));
 			}
@@ -151,6 +170,31 @@
 				htmlElement.className = htmlElement.className.replace(cssClass,'');
 			}
 		},
+		'animate': function (next) {
+			if (this.container.className.indexOf('animate') === -1) {
+				this.container.className += ' animate';
+			} else {
+				this.container.className =  this.container.className.replace(' animate', '');
+			}
+			if(typeof next === 'function'){
+				setTimeout(next, J.Dialog.DURATIONS[J.Dialog.containerAnimationLength]);
+			}
+		},
+		'open': function (then) {
+			var next = then || null;
+			if (this.container.className.indexOf('open') === -1) {
+				this.container.className += ' open';
+			}
+			setTimeout(this.animate.bind(this), 50, next);
+		},
+		'close': function (then) {
+			function closeContainer() {
+				if (this.container.className.indexOf(' open') != -1) {
+					this.container.className =  this.container.className.replace(' open', '');
+				}
+			}
+			this.animate(closeContainer.bind(this));
+		},
 		'update': function (e) {
 			e = e || window.event;
 			// Update ths display if all dialogues are closed.
@@ -158,23 +202,18 @@
 			switch (e.type){
 				case 'dialogOpened':
 					this.lockScreen();
+					this.open();
 
-					if (this.container.className.indexOf('open') === -1) {
-						this.container.className += ' open';
-					}
 					break;
 				case 'dialogClosed':
 				case 'dialogDestroyed':
 					for (var i = 0; i < this.dialogues.length; i += 1) {
-
 						if (this.dialogues[i].state === 'open') {
 							return;
 						}
 					}
 
-					if (this.container.className.indexOf('open') != -1) {
-						this.container.className =  this.container.className.replace('open');
-					}
+					this.close();
 					this.unlockScreen();
 					break;
 			}
@@ -184,15 +223,37 @@
     if (!J.Dialog) { // Test for existance of the dialog object.
 
         J.Dialog = new J.Class();
+
+		J.Dialog.FADE_IN = 'fade-in';
+		J.Dialog.SLIDE_UP= 'slide-up';
+
+		J.Dialog.ONE_MS = 'duration-1';
+		J.Dialog.TWO_MS = 'duration-2';
+		J.Dialog.THREE_MS = 'duration-3';
+		J.Dialog.FOUR_MS = 'duration-4';
+
+		J.Dialog.DURATIONS = {
+			'duration-1': 100 ,
+			'duration-2': 250 ,
+			'duration-3': 500 ,
+			'duration-4': 750
+		};
+
+		J.Dialog.containerAnimationStyle = J.Dialog.FADE_IN;
+		J.Dialog.containerAnimationLength = J.Dialog.ONE_MS;
+
 		//	Properties.
 		J.Dialog.prototype.dialog = null; // Root HTML Element for the dialog content.
 		J.Dialog.prototype.state = null;
+		J.Dialog.prototype.animated = false;
 
 		J.Dialog.prototype.defaultConfig = {
 		 	'preserveContent': true,
 			'dialogRootElement': 'div',
 			'dialogRootClass': '',
-			'contentNode': null
+			'contentNode': null,
+			'animationStyle': J.Dialog.SLIDE_UP,
+			'animationLength': J.Dialog.ONE_MS
 		};
 
 		J.Dialog.prototype.init = function (configObj) {
@@ -202,28 +263,49 @@
 
 			return this;
         };
-
+		J.Dialog.prototype.animate = function (next) {
+			if (this.dialog.className.indexOf('animate') === -1) {
+				this.dialog.className += ' animate';
+			} else {
+				this.dialog.className =  this.dialog.className.replace(' animate', '');
+			}
+			if (typeof next === 'function'){
+				setTimeout(next, J.Dialog.DURATIONS[this.config.animationLength]);
+			}
+		};
         J.Dialog.prototype.display = function () {
 			if (!this.dialog) {
 				this.dialog = this.container.createDialog(this);
 			}
-			if (this.dialog.classList.contains('inactive')) {
-				this.dialog.classList.remove('inactive');
-				this.state = 'open';
-			}
 
+			if (this.dialog.className.indexOf('inactive') !== -1) {
+				this.dialog.className = this.dialog.className.replace(' inactive','');
+				this.state = 'open';
+				if (this.animated) {
+					setTimeout(this.animate.bind(this),50);
+				}
+			}
 			var event = new CustomEvent('dialogOpened', { 'detail': this, 'bubbles': true, 'cancelable': true});
 			this.dialog.dispatchEvent(event);
 		};
 
         J.Dialog.prototype.hide = function () {
-			if (!this.dialog.classList.contains('inactive')) {
-				this.dialog.classList.add('inactive');
-				this.state = 'closed';
-			}
+			function hideWindow(){
+				if (this.dialog.className.indexOf('inactive') === -1) {
+					this.dialog.className += ' inactive';
+					this.state = 'closed';
+				}
 
-			var event = new CustomEvent('dialogClosed', { 'detail': this, 'bubbles': true, 'cancelable': true});
-			this.dialog.dispatchEvent(event);
+				var event = new CustomEvent('dialogClosed', { 'detail': this, 'bubbles': true, 'cancelable': true});
+				this.dialog.dispatchEvent(event);
+			}
+			var next = hideWindow.bind(this);
+
+			if (this.animated && this.state === 'open') {
+				this.animate(next);
+			}else if (this.state === 'open'){
+				next();
+			}
 		};
 
         J.Dialog.prototype.destroy = function () {

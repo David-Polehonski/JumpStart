@@ -4,36 +4,36 @@
         'menu','menuitem','details','summary','data','main',
         'track','embed','source','keygen','bdi','math','svg',
         'progress','ruby','rp','rt','wbr','mark','meter','time'];
-    
+
     var _newElements_inline_block = [
         'datalist'
     ];
-    
+
     var _newElements_block = [
         'section','nav','article','aside','header','hgroup','footer',
         'figure','figcaption','canvas','audio','output','video'
     ]
-    
+
     var _newElements_nonvisible = [
         'template'
     ]
-    
+
     for(var i =0; i < _newElements_inline.length; i++){
-       document.createElement(_newElements_inline[i]); 
+       document.createElement(_newElements_inline[i]);
     }
-   
+
     for(var c =0; c < _newElements_inline_block.length; c++){
-       document.createElement(_newElements_inline_block[c]); 
+       document.createElement(_newElements_inline_block[c]);
     }
-    
+
     for(var b =0; b < _newElements_block.length; b++){
-       document.createElement(_newElements_block[b]); 
+       document.createElement(_newElements_block[b]);
     }
-    
+
     for(var v =0; v < _newElements_nonvisible.length; v++){
-       document.createElement(_newElements_nonvisible[v]); 
+       document.createElement(_newElements_nonvisible[v]);
     }
-    
+
     // Poly fill: 'Array.indexOf'
     if (!Array.prototype.indexOf) {
         Array.prototype.indexOf = function (searchElement, fromIndex) {
@@ -64,7 +64,7 @@
             return -1;
         };
     }
-    
+
     // Poly fill: 'Function.bind'
     if (!Function.prototype.bind) {
         Function.prototype.bind = function (oThis) {
@@ -73,14 +73,13 @@
             throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
         }
 
-        var aArgs = Array.prototype.slice.call(arguments, 1), 
-            fToBind = this, 
+        var aArgs = Array.prototype.slice.call(arguments, 1),
+            fToBind = this,
             fNOP = function () {},
             fBound = function () {
-            return fToBind.apply(this instanceof fNOP && oThis
-                                     ? this
-                                     : oThis,
-                                     aArgs.concat(Array.prototype.slice.call(arguments)));
+            return fToBind.apply(
+				this instanceof fNOP && oThis ? this : oThis,
+                aArgs.concat(Array.prototype.slice.call(arguments)));
         };
 
         fNOP.prototype = this.prototype;
@@ -89,51 +88,126 @@
         return fBound;
         };
     }
-    
+
+
+	(function() {
+		if (!Event.prototype.preventDefault) {
+			Event.prototype.preventDefault = function() {
+				this.returnValue=false;
+			};
+		}
+		if (!Event.prototype.stopPropagation) {
+			Event.prototype.stopPropagation=function() {
+				this.cancelBubble=true;
+			};
+		}
+
+		if (!Element.prototype.addEventListener) {
+			var eventListeners=[];
+
+			var addEventListener=function(type,listener /*, useCapture (will be ignored) */) {
+				var self=this;
+				var wrapper=function(e) {
+					e.target=e.srcElement;
+					e.currentTarget=self;
+					if (listener.handleEvent) {
+						listener.handleEvent(e);
+					} else {
+						listener.call(self,e);
+					}
+				};
+				if (type=="DOMContentLoaded") {
+					var wrapper2=function(e) {
+						if (document.readyState=="complete") {
+							wrapper(e);
+						}
+					};
+					document.attachEvent("onreadystatechange",wrapper2);
+					eventListeners.push({object:this,type:type,listener:listener,wrapper:wrapper2});
+
+					if (document.readyState=="complete") {
+						var e=new Event();
+						e.srcElement=window;
+						wrapper2(e);
+					}
+				} else {
+					this.attachEvent("on"+type,wrapper);
+					eventListeners.push({object:this,type:type,listener:listener,wrapper:wrapper});
+				}
+			};
+			var removeEventListener=function(type,listener /*, useCapture (will be ignored) */) {
+				var counter=0;
+				while (counter<eventListeners.length) {
+					var eventListener=eventListeners[counter];
+					if (eventListener.object==this && eventListener.type==type && eventListener.listener==listener) {
+						if (type=="DOMContentLoaded") {
+							this.detachEvent("onreadystatechange",eventListener.wrapper);
+						} else {
+							this.detachEvent("on"+type,eventListener.wrapper);
+						}
+						eventListeners.splice(counter, 1);
+						break;
+					}
+					++counter;
+				}
+			};
+			Element.prototype.addEventListener=addEventListener;
+			Element.prototype.removeEventListener=removeEventListener;
+			if (HTMLDocument) {
+				HTMLDocument.prototype.addEventListener=addEventListener;
+				HTMLDocument.prototype.removeEventListener=removeEventListener;
+			}
+			if (Window) {
+				Window.prototype.addEventListener=addEventListener;
+				Window.prototype.removeEventListener=removeEventListener;
+			}
+		}
+	})();
+
     var HTML = new J.Class();
-    
-    HTML.prototype.Jump = function(){
-        var newStyle = document.getElementsByTagName('head')[0].appendChild(document.createElement('style'));
-        newStyle.styleSheet.addRule("html.ie *","zoom:1;",0);
-        
+
+    HTML.prototype.init = function(J) {
+        var styles = document.getElementsByTagName('head')[0].appendChild(document.createElement('style')).styleSheet;
+        styles.addRule("html.ie *","zoom:1;",0);
+
         for(var b = 0; b < _newElements_block.length; b++){
-            newStyle.styleSheet.addRule(_newElements_block[b],"display:block;",0); 
+            styles.addRule(_newElements_block[b],"display:block;",0);
         }
-        
+
         for(var c = 0; c < _newElements_block.length; c++){
-            newStyle.styleSheet.addRule(_newElements_inline_block[c],"display:inline-block;",0); 
+            styles.addRule(_newElements_inline_block[c],"display:inline-block;",0);
         }
-        
+
         for(var v = 0; v < _newElements_nonvisible.length; v++){
-            newStyle.styleSheet.addRule(_newElements_nonvisible[v],"display:none;",0); 
+            styles.addRule(_newElements_nonvisible[v],"display:none;",0);
         }
-         
-        /* Datalist fallback? - David Polehonski */
+
+        /* Datalist fallback - David Polehonski */
         (function (global){
             var datalists_src = document.getElementsByTagName('datalist'), datalists = {};
             var inputs_src = document.getElementsByTagName('input'), inputs = [];
-            
+
             for(var d = 0; d < datalists_src.length; d++){
                 if(datalists_src[d].id){
                     datalists[datalists_src[d].id] = datalists_src[d].cloneNode(true);
                 }
                 datalists_src[d].parentNode.removeChild(datalists_src[d]);
             }
-            
+
             for(var i = 0; i < inputs_src.length; i++){
                 if(inputs_src[i].hasAttribute('list')){
                     inputs.push(inputs_src[i]);
                 }
             }
-            
+
             var autoSearch = new J.Class();
             autoSearch.prototype.init = function(bind){
                 var div = document.createElement('div');
                 var parent = bind.parentNode;
-                
+
                 this.view = parent.insertBefore(div,bind);
                 this.field = this.view.appendChild(bind);
-                
+
                 this.suggestions = [];
                 this.render(this.view);
                 this.setUpCallBack();
@@ -147,7 +221,7 @@
                 this.suggestList.className = "suggestions hidden"
 
                 var styleRules = J.styles.getStyles();
-                
+
                 styleRules.addRules(".autoSuggest",["display:inline",
                                                     "z-index: 1001"]);
                 styleRules.addRules(".autoSuggest input",["font-size:12px;"]);
@@ -169,7 +243,7 @@
 
                 styleRules.addRules(".suggestions.hidden",["display:none"]);
                 styleRules.addRules(".suggestions.display",["display:block"]);
-                styleRules.addRules(".autoSuggest",["position:relative"]);	
+                styleRules.addRules(".autoSuggest",["position:relative"]);
             }
 
             autoSearch.prototype.update = function(string){
@@ -190,11 +264,11 @@
                 }
                 if(this.suggestList.getElementsByTagName('li').length > 0)
                 {
-                    this.suggestList.className = "suggestions display";	
+                    this.suggestList.className = "suggestions display";
                 }else
                 {
                     this.suggestList.className = "suggestions hidden";
-                }			
+                }
             }
 
             autoSearch.prototype.resetView = function(){
@@ -216,7 +290,7 @@
                 var newLi = document.createElement('li');
 
                 value = value.replace(new RegExp(s,'i'),"<span>$&</span>");
-                newLi.innerHTML = value;	
+                newLi.innerHTML = value;
 
                 var newElement = this.suggestList.appendChild(newLi);
                 /*
@@ -227,7 +301,7 @@
                 {
                     "use strict";
                     var e = e || window.event;
-                    autosuggest.updateField(this);				
+                    autosuggest.updateField(this);
                 }
 
                 if(window.addEventListener)
@@ -251,14 +325,14 @@
                 {
                     "use strict";
                     var e = e || window.event;
-                    autosuggest.update(this.value);				
+                    autosuggest.update(this.value);
                 }
 
                 var resetback = function(e)
                 {
                     "use strict";
                     var e = e || window.event;
-                    autosuggest.resetView();				
+                    autosuggest.resetView();
                 }
 
                 if(window.addEventListener)
@@ -276,26 +350,25 @@
                 this.field.value = value;
                 this.resetView();
             }
-            
+
             for(ix = 0; ix < inputs.length; ix++){
                 var a = new autoSearch(inputs[ix]);
                 var list, arr = [];
-                
+
                 if(datalists[inputs[ix].getAttribute('list')]){
                     list = datalists[inputs[ix].getAttribute('list')].getElementsByTagName('option');
                     for(var c = 0; c < list.length; c++){
                         arr.push(list[c].value);
                     }
                     a.loadSuggestions(arr);
-                }      
+                }
             }
-            
+
         })(this);
-        
+
         /* Placeholder.js - http://jamesallardice.github.io/Placeholders.js/ for HTML5 placeholders */
         (function (global) {
-
-            "use strict";
+			"use strict";
 
             // Cross-browser DOM event binding
             function addEventListener(elem, event, fn) {
@@ -352,7 +425,7 @@
                 }
             };
         }(this));
-    
+
         (function (global) {
 
             "use strict";
@@ -734,12 +807,8 @@
 
         }(this));
 
-    
-    }
-    
-    J.JumpStart(new HTML());
-    
+    };
+
+    J.jumpStart(HTML);
+
 }(window.J));
-
-
-

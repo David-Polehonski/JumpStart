@@ -52,7 +52,7 @@
         }
     };
 
-	n.var = function (varName) {
+	n.value = function (varName) {
 		if (typeof vars[varName] !== 'undefined') {
 			return vars[varName];
 		}
