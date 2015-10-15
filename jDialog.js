@@ -8,14 +8,19 @@
 	    _containerInstance,
 		_css;
 
-
 	// PRIVATE STATIC
     function isFlex () {
         var test = document.createElement('div');
-        test.style.display = "flex";
+        try {test.style.display = "flex";} catch(e) { return false; }
 
         return test.style.display === "flex";
     }
+
+	function isElement (e) {
+		return typeof HTMLElement === "object" ?
+			e instanceof HTMLElement : //DOM2
+    		e && typeof e === "object" && e !== null && e.nodeType === 1 && typeof e.nodeName==="string";
+	}
 
 	function getContainer() {
 		if (!_containerInstance){
@@ -30,19 +35,37 @@
 		'init': function () {
 			this.container = document.createElement('div');
 	        this.container.className = "dialog-container";
-			document.body.appendChild(this.container);
+
+			this.container = document.body.appendChild(this.container);
 
 			this.container.addEventListener('click', this.closeDialogues.bind(this), false); // Use Capture?
 			this.container.addEventListener('dialogOpened', this.update.bind(this), false); // Use Capture?
 			this.container.addEventListener('dialogClosed', this.update.bind(this), false); // Use Capture?
 
+			if ('createEventObject' in document && !('createEvent' in document)) {
+				// No custom events.. must be IE8.
+				this.container.addEventListener('propertychange', function (e) {
+					console.log('caught an event');
+					console.log(e.srcElement.className);
+					console.log(e.propertyName);
+					if (e.propertyName === 'eventName') {
+						var fakeEvent = J.object({}).mergeWith(e);
+						fakeEvent.type = e.srcElement.getAttribute('eventName');
+						this.update(fakeEvent);
+					}
+				}.bind(this), false);
+
+				this.container.setAttribute('eventName','init');
+				this.ie8Mode = true; // SET IE8 MODE.
+			}
+
 			this.loadCss();
 
-			this.loadConfig();
+			this.configure();
 
 			return;
 		},
-		'loadConfig': function () {
+		'configure': function () {
 			if (J.Dialog.containerAnimationStyle !== null) {
 				this.container.className += ' ' + J.Dialog.containerAnimationStyle;
 			}
@@ -118,8 +141,9 @@
 
 
 		},
-		'createDialog': function (inst) {
+		'createNewDialog': function (inst) {
 			var newDialog = document.createElement(inst.config.dialogRootElement);
+			var closeButton = null;
 			newDialog.className = 'dialog-window inactive ' + inst.config.dialogRootClass;
 
 			if (inst.config.animationStyle !== null) {
@@ -139,6 +163,21 @@
 			 	inst.contentNode.parentNode.removeChild(inst.contentNode);
 			}
 
+			if (inst.config.closeButton !== null) {
+				if (typeof inst.config.closeButton === typeof 'string') {
+					closeButton = document.createElement('div');
+					closeButton.className = "dialog-close-button";
+					closeButton.appendChild(document.createTextNode(inst.config.closeButton));
+				} else if(isElement(inst.config.closeButton)) {
+					closeButton = inst.config.closeButton.cloneNode(true);
+				}
+
+				if (closeButton !== null) {
+					closeButton = newDialog.appendChild(closeButton);
+					closeButton.addEventListener('click', inst.hide.bind(inst), false);
+				}
+			}
+
 			newDialog = this.container.appendChild(newDialog);
 
 			newDialog.addEventListener('click', function (e) {
@@ -147,6 +186,11 @@
 				if (e.stopPropagation) e.stopPropagation();
 			}, false);
 			this.dialogues.push(inst);
+
+			if (this.ie8Mode) {
+				inst.config.ie8Mode = true;
+			}
+
 			return newDialog;
 		},
 		'closeDialogues': function () {
@@ -196,7 +240,6 @@
 			this.animate(closeContainer.bind(this));
 		},
 		'update': function (e) {
-			e = e || window.event;
 			// Update ths display if all dialogues are closed.
 
 			switch (e.type){
@@ -275,7 +318,7 @@
 		};
         J.Dialog.prototype.display = function () {
 			if (!this.dialog) {
-				this.dialog = this.container.createDialog(this);
+				this.dialog = this.container.createNewDialog(this);
 			}
 
 			if (this.dialog.className.indexOf('inactive') !== -1) {
@@ -285,8 +328,13 @@
 					setTimeout(this.animate.bind(this),50);
 				}
 			}
-			var event = new CustomEvent('dialogOpened', { 'detail': this, 'bubbles': true, 'cancelable': true});
-			this.dialog.dispatchEvent(event);
+
+			if ('ie8Mode' in this.config) {
+				this.container.container.setAttribute('eventName','dialogOpened');
+			} else {
+				var event = new CustomEvent('dialogOpened', { 'detail': this, 'bubbles': true, 'cancelable': true});
+				this.dialog.dispatchEvent(event);
+			}
 		};
 
         J.Dialog.prototype.hide = function () {
@@ -295,9 +343,12 @@
 					this.dialog.className += ' inactive';
 					this.state = 'closed';
 				}
-
-				var event = new CustomEvent('dialogClosed', { 'detail': this, 'bubbles': true, 'cancelable': true});
-				this.dialog.dispatchEvent(event);
+				if ('ie8Mode' in this.config) {
+					this.container.container.setAttribute('eventName','dialogClosed');
+				} else {
+					var event = new CustomEvent('dialogClosed', { 'detail': this, 'bubbles': true, 'cancelable': true});
+					this.dialog.dispatchEvent(event);
+				}
 			}
 			var next = hideWindow.bind(this);
 
@@ -312,9 +363,12 @@
 			this.dialog.parentNode.removeChild(this.dialog);
 			delete this.dialog;
 			this.state = null;
-
-			var event = new CustomEvent('dialogDestroyed', { 'detail': this, 'bubbles': true, 'cancelable': true});
-			this.dialog.dispatchEvent(event);
+			if ('ie8Mode' in this.config) {
+				this.container.container.setAttribute('eventName','dialogDestroyed');
+			} else {
+				var event = new CustomEvent('dialogDestroyed', { 'detail': this, 'bubbles': true, 'cancelable': true});
+				this.dialog.dispatchEvent(event);
+			}
 		};
 
     }

@@ -4,7 +4,6 @@
 (function (J) {
     "use strict";
 	/* Polyfil for custom events*/
-
 	window.CustomEvent = function( eventName, defaultInitDict ) {
 		function CustomEvent(type, eventInitDict) {
 			var event;
@@ -45,5 +44,5 @@
 			detail: null
 		}
 	);
-	
+
 }(window.J));

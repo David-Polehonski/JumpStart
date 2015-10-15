@@ -1,5 +1,7 @@
 // JavaScript Document - HTML 5 BODGE IT! (JavaJumpBox)
 (function(J){
+
+	// Poly fill HTML5 Elements
     var _newElements_inline = [
         'menu','menuitem','details','summary','data','main',
         'track','embed','source','keygen','bdi','math','svg',
@@ -12,11 +14,11 @@
     var _newElements_block = [
         'section','nav','article','aside','header','hgroup','footer',
         'figure','figcaption','canvas','audio','output','video'
-    ]
+    ];
 
     var _newElements_nonvisible = [
         'template'
-    ]
+    ];
 
     for(var i =0; i < _newElements_inline.length; i++){
        document.createElement(_newElements_inline[i]);
@@ -89,8 +91,8 @@
         };
     }
 
-
-	(function() {
+	//	Polyfil addEventListener for IE8.
+	(function polyfilAddEventLister() {
 		if (!Event.prototype.preventDefault) {
 			Event.prototype.preventDefault = function() {
 				this.returnValue=false;
@@ -211,14 +213,14 @@
                 this.suggestions = [];
                 this.render(this.view);
                 this.setUpCallBack();
-            }
+            };
 
             autoSearch.prototype.render = function(divObject){
                 this.container = divObject;
                 this.container.className = "autoSuggest";
                 this.field = this.field;
                 this.suggestList = this.container.appendChild(document.createElement("ul"));
-                this.suggestList.className = "suggestions hidden"
+                this.suggestList.className = "suggestions hidden";
 
                 var styleRules = J.styles.getStyles();
 
@@ -244,7 +246,7 @@
                 styleRules.addRules(".suggestions.hidden",["display:none"]);
                 styleRules.addRules(".suggestions.display",["display:block"]);
                 styleRules.addRules(".autoSuggest",["position:relative"]);
-            }
+            };
 
             autoSearch.prototype.update = function(string){
                 var x, i = 0, regex = new RegExp(string,"i"), maxLength = 25;
@@ -269,11 +271,11 @@
                 {
                     this.suggestList.className = "suggestions hidden";
                 }
-            }
+            };
 
             autoSearch.prototype.resetView = function(){
                 this.suggestList.className = "suggestions hidden";
-            }
+            };
 
             autoSearch.prototype.clearList = function(){
                 var li = this.suggestList.getElementsByTagName('li'), i=0;
@@ -283,7 +285,7 @@
                     this.suggestList.removeChild(li[i-1]);
                 }
 
-            }
+            };
 
             autoSearch.prototype.addElement = function(value,s){
 
@@ -297,18 +299,14 @@
                 ||	Add the event listener to the li here for auto-fill.
                 */
                 var autosuggest = this;
-                var callback = function(e)
-                {
-                    "use strict";
-                    var e = e || window.event;
+
+				function callback(e) {
                     autosuggest.updateField(this);
                 }
 
-                if(window.addEventListener)
-                {
+                if(window.addEventListener) {
                     newElement.addEventListener("click",callback,false);
-                }else
-                {
+                }else {
                     newElement.onclick = callback;
                 }
 
