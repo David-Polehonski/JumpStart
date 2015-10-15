@@ -1,0 +1,37 @@
+/*
+	Default Decorative styles for jDialog
+*/
+.dialog-container {
+	background-color: #FFFFFF;
+	background-color: rgba(255,255,255,0.8);
+}
+
+.dialog-window {
+	background-color: #FFFFFF;
+	box-shadow: 1px 1px 3px 0px #CCCCCC,  0 0 4px -1px #DDDDDD;
+}
+
+/* OOCS Animation classes, can be applied with JS constants. */
+.fade-in {
+	transition-property: opacity;
+	transition-delay: 0s;
+	transition-timing-function: ease-in-out;
+}
+.fade-in{ opacity: 0; }
+.fade-in.animate { opacity: 1; }
+
+.slide-up {
+	transition-property: top opacity;
+	transition-delay: 0s;
+	transition-timing-function: ease-in-out;
+
+	position: relative;
+	top: 100px;
+	opacity: 0;
+}
+.slide-up.animate { top: 0px; opacity: 1; }
+
+.duration-1 { transition-duration: 0.1s; }
+.duration-2 { transition-duration: 0.25s; }
+.duration-3 { transition-duration: 0.5s; }
+.duration-4 { transition-duration: 0.75s; }

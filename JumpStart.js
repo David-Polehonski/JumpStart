@@ -1,10 +1,23 @@
 (function (nameSpace) {
     "use strict";
 	var n = nameSpace || {},
-        j = [];
+        j = [],
+		vars = {};
+
+	vars.rootPath = function () {
+		if (!!document.currentScript) {
+			return document.currentScript.src;
+		} else {
+			return function () {
+				var scripts = document.getElementsByTagName('script');
+				return scripts[scripts.length-1].src;
+			}();
+		}
+	}().replace(/\/[a-zA-Z]+\.js$/, '/');
+
 	//	Class() - syntactic sugar function.
 	n.Class = function () {
-		// Create a variable 
+		// Create a variable
 		var a;
 		(a = function () {
 			if (arguments.length > 0) {
@@ -29,33 +42,37 @@
 		};
 		return a;
 	};
-	
+
 	n.Main = function () {};
-	
+	n.main = function () { this.Main(); };
+
     n.jumpStart = function (f) {
         if (!!f && typeof f === "function") {
             j.push(f);
         }
     };
-    
-    function s(e) {
-		var i = 0, l = j.length, x = 'name';
-        
-		for (i; i < l; i += 1) {
-			if (!!j[i][x]) {
-                j[i] = n[j[i][x]] = new j[i](n);
-            } else {
-                j[i] = new j[i](n);
-            }
+
+	n.value = function (varName) {
+		if (typeof vars[varName] !== 'undefined') {
+			return vars[varName];
 		}
+		return null;
+	};
+
+    function s(e) {
+		var i = 0, l = j.length;
+
+		for (i; i < l; i += 1) {
+			j[i] = new j[i](n);
+        }
 		n.Main(n);
 	}
-		
+
 	if (window.addEventListener) {
 		window.addEventListener('load', function (e) { s(e); }, false);
 	} else {
 		window.attachEvent('onload', function (e) { var E = e || window.event; s(E); });
 	}
-    
+
 	return n;
 }(window.J = window.J || {}));
