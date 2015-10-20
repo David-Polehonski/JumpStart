@@ -45,9 +45,6 @@
 			if ('createEventObject' in document && !('createEvent' in document)) {
 				// No custom events.. must be IE8.
 				this.container.addEventListener('propertychange', function (e) {
-					console.log('caught an event');
-					console.log(e.srcElement.className);
-					console.log(e.propertyName);
 					if (e.propertyName === 'eventName') {
 						var fakeEvent = J.object({}).mergeWith(e);
 						fakeEvent.type = e.srcElement.getAttribute('eventName');
@@ -96,7 +93,8 @@
 				"top: 0",
 				"left: 0",
 				"width: 100%",
-				"height: 100%"
+				"height: 100%",
+				"z-index: 1000"
 			]);
 
 			if (isFlex()) {
@@ -142,8 +140,19 @@
 
 		},
 		'createNewDialog': function (inst) {
-			var newDialog = document.createElement(inst.config.dialogRootElement);
-			var closeButton = null;
+			var newDialog = null,
+				closeButton = null;
+
+			if (inst.config.contentNode !== null) {
+				// Dialog window is being passed in.
+				newDialog = inst.config.contentNode.cloneNode(true);
+				if (inst.config.preserveContent === false) {
+				 	inst.contentNode.parentNode.removeChild(inst.contentNode);
+				}
+			} else {
+				newDialog = document.createElement(inst.config.dialogRootElement);
+			}
+
 			newDialog.className = 'dialog-window inactive ' + inst.config.dialogRootClass;
 
 			if (inst.config.animationStyle !== null) {
@@ -153,14 +162,6 @@
 				newDialog.className += ' ' + inst.config.animationStyle;
 				newDialog.className += ' ' + inst.config.animationLength;
 				inst.animated = true;
-			}
-
-			if (inst.config.contentNode !== null) {
-				newDialog.appendChild(inst.config.contentNode.cloneNode(true));
-			}
-
-			if (inst.config.preserveContent === false) {
-			 	inst.contentNode.parentNode.removeChild(inst.contentNode);
 			}
 
 			if (inst.config.closeButton !== null) {
