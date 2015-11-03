@@ -29,6 +29,11 @@
 		return _containerInstance;
 	}
 
+    // function for stopping background scroll on mobile devices, called at line 211 and 221.
+    function stopScroll(evt) {
+        evt.preventDefault();
+    }
+
 	//	Private Singleton Object.
 	DialogContainer.prototype = {
 		'dialogues': [],
@@ -203,6 +208,8 @@
 			var htmlElement = document.getElementsByTagName('html')[0],
 				cssClass = "dialog-lock";
 
+            htmlElement.addEventListener("touchmove", stopScroll, true);
+
 			if (htmlElement.className.indexOf(cssClass) === -1) {
 				htmlElement.className += (" " + cssClass);
 			}
@@ -210,6 +217,8 @@
 		'unlockScreen': function () {
 			var htmlElement = document.getElementsByTagName('html')[0],
 				cssClass = "dialog-lock";
+
+            htmlElement.removeEventListener("touchmove", stopScroll, true);
 
 			if (htmlElement.className.indexOf(cssClass) !== -1) {
 				htmlElement.className = htmlElement.className.replace(cssClass,'');
