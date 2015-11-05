@@ -5,7 +5,7 @@
     var _newElements_inline = [
         'menu','menuitem','details','summary','data','main',
         'track','embed','source','keygen','bdi','math','svg',
-        'progress','ruby','rp','rt','wbr','mark','meter','time'];
+        'progress','ruby','rp','rt','wbr','mark','meter','time', 'picture'];
 
     var _newElements_inline_block = [
         'datalist'
