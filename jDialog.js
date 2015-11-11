@@ -31,7 +31,7 @@
 
     // function for stopping background scroll on mobile devices, called at line 211 and 221.
     function stopScroll(evt) {
-        evt.preventDefault();
+		evt.preventDefault();
     }
 
 	//	Private Singleton Object.
@@ -83,12 +83,7 @@
 
 			_css = (document.head || document.getElementsByTagName('head')[0]).insertBefore(newStyleSheet, document.getElementsByTagName('link')[0]);
 
-			J.styles.addRules("html.dialog-lock", ["height: 100%", "overflow-y: hidden"]);
-
-			J.styles.addRules("html.dialog-lock > body", [
-				"height: 100%",
-				"overflow: visible"
-			]);
+			J.styles.addRules("html.dialog-lock", ["height: 100%", "width: 100%"]);
 
 			J.styles.addRules(".dialog-container", ["display: none"]);
 
@@ -191,6 +186,7 @@
 				e.cancelBubble = true;
 				if (e.stopPropagation) e.stopPropagation();
 			}, false);
+
 			this.dialogues.push(inst);
 
 			if (this.ie8Mode) {
@@ -206,21 +202,30 @@
 		},
 		'lockScreen': function () {
 			var htmlElement = document.getElementsByTagName('html')[0],
+			 	bodyElement = document.getElementsByTagName('body')[0],
 				cssClass = "dialog-lock";
 
-            htmlElement.addEventListener("touchmove", stopScroll, true);
-
+			alert('Lock');
 			if (htmlElement.className.indexOf(cssClass) === -1) {
+
+				bodyElement.setAttribute('style',"height: 100%; "+
+					"width: 100%; "+
+					"overflow: auto; "+
+					"position: fixed "+
+					-window.pageYOffset + 'px');
+
 				htmlElement.className += (" " + cssClass);
 			}
 		},
 		'unlockScreen': function () {
 			var htmlElement = document.getElementsByTagName('html')[0],
+				bodyElement = document.getElementsByTagName('body')[0],
 				cssClass = "dialog-lock";
 
-            htmlElement.removeEventListener("touchmove", stopScroll, true);
+            //htmlElement.removeEventListener("touchmove", stopScroll, false);
 
 			if (htmlElement.className.indexOf(cssClass) !== -1) {
+				bodyElement.setAttribute('style','');
 				htmlElement.className = htmlElement.className.replace(cssClass,'');
 			}
 		},
