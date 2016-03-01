@@ -48,6 +48,20 @@
         }
     };
 
+	// JTemplateField = new J.Class();
+	// JTemplateField.prototype.init = function (){
+	//
+	// }
+	//
+	// JTemplateField.prototype.set = function (){
+	//
+	// }
+	//
+	// JTemplateField.prototype.get = function (){
+	//
+	// }
+
+
     J.render = function (templateNode, dataObj, rootElement) {
         // Only Accepts HTML5 Templates.
         var i = 0,
@@ -131,12 +145,12 @@
 
         template.setDataContext(dataObj);
 
-        dataElements = template.templateElement.querySelectorAll("[" + BIND + "]");
+        dataElements = template.getTemplateElement().querySelectorAll("[" + BIND + "]");
         for (i; i < dataElements.length; i += 1) {
             bindData(dataElements[i]);
         }
 
-        dataAttributes = template.templateElement.querySelectorAll("[" + ATTRIBUTE + "]");
+        dataAttributes = template.getTemplateElement().querySelectorAll("[" + ATTRIBUTE + "]");
         for (i = 0; i < dataAttributes.length; i += 1) {
 
 			var attributes = dataAttributes[i].getAttribute(ATTRIBUTE).split('&'); // all attributes in an element.
@@ -154,16 +168,19 @@
     J.Template.prototype.init = function (templateElement, dataContext) {
         this.nodes = {};
         this.observers = [];
-        this.setTemplateElement(templateElement);
+
+		var thisTemplateElement = templateElement || document.createElement('template');
+		this.getTemplateElement = function () {
+			return thisTemplateElement;
+		}
+		this.setTemplateElement = function (newTemplateElement) {
+			thisTemplateElement = newTemplateElement;
+		}
+
 
         if (typeof dataContext !== "undefined") {
             this.setDataContext(dataContext);
         }
-    };
-
-    // Sets the template element.
-    J.Template.prototype.setTemplateElement = function (templateElement) {
-        this.templateElement = templateElement;
     };
 
     // Sets the template element.
@@ -237,10 +254,10 @@
     // Adds a data bound parameter with getters and setters to the template API.
     J.Template.prototype.addBoundParameter = function (name, node) {
         // Adds methods for manipulating an injected parameter.
-        if (!this.templateElement.contains(node)) {
+        if (!this.getTemplateElement().contains(node)) {
             var e = new JTemplateException("J.Template must contain argument node", {
                 'node': node,
-                'element': this.templateElement
+                'element': this.getTemplateElement()
             });
             e.throwException();
         }
@@ -403,12 +420,12 @@
     };
 
     J.Template.prototype.render = function (targetElement) {
-        targetElement.appendChild(this.templateElement);
+        targetElement.appendChild(this.getTemplateElement());
         return;
     };
     J.Template.prototype.remove = function () {
-        var parent = this.templateElement.parentNode,
-            child = this.templateElement;
+        var parent = this.getTemplateElement().parentNode,
+            child = this.getTemplateElement();
 
         if (this.observers.length > 0) {
             this.observers.forEach(function (observer) {
@@ -421,4 +438,6 @@
         //}
         return;
     };
+
+
 }(window.J));

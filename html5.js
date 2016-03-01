@@ -92,19 +92,20 @@
     }
 
 	//	Polyfil addEventListener for IE8.
-	(function polyfilAddEventLister() {
-		if (!Event.prototype.preventDefault) {
-			Event.prototype.preventDefault = function() {
-				this.returnValue=false;
-			};
-		}
-		if (!Event.prototype.stopPropagation) {
-			Event.prototype.stopPropagation=function() {
-				this.cancelBubble=true;
-			};
-		}
 
-		if (!Element.prototype.addEventListener) {
+	if (!Event.prototype.preventDefault) {
+		Event.prototype.preventDefault = function() {
+			this.returnValue=false;
+		};
+	}
+	if (!Event.prototype.stopPropagation) {
+		Event.prototype.stopPropagation=function() {
+			this.cancelBubble=true;
+		};
+	}
+
+	if (!Element.prototype.addEventListener) {
+		(function () {
 			var eventListeners=[];
 
 			var addEventListener=function(type,listener /*, useCapture (will be ignored) */) {
@@ -163,10 +164,10 @@
 				Window.prototype.addEventListener=addEventListener;
 				Window.prototype.removeEventListener=removeEventListener;
 			}
-		}
-	})();
+		})();
+	}
 
-    var HTML = new J.Class();
+	var HTML = new J.Class();
 
     HTML.prototype.init = function(J) {
         var styles = document.getElementsByTagName('head')[0].appendChild(document.createElement('style')).styleSheet;
@@ -202,8 +203,8 @@
                 }
             }
 
-            var autoSearch = new J.Class();
-            autoSearch.prototype.init = function(bind){
+            var dataList = new J.Class();
+            dataList.prototype.init = function(bind){
                 var div = document.createElement('div');
                 var parent = bind.parentNode;
 
@@ -215,7 +216,7 @@
                 this.setUpCallBack();
             };
 
-            autoSearch.prototype.render = function(divObject){
+            dataList.prototype.render = function(divObject){
                 this.container = divObject;
                 this.container.className = "autoSuggest";
                 this.field = this.field;
@@ -248,7 +249,7 @@
                 styleRules.addRules(".autoSuggest",["position:relative"]);
             };
 
-            autoSearch.prototype.update = function(string){
+            dataList.prototype.update = function(string){
                 var x, i = 0, regex = new RegExp(string,"i"), maxLength = 25;
 
                 this.clearList();
@@ -273,11 +274,11 @@
                 }
             };
 
-            autoSearch.prototype.resetView = function(){
+            dataList.prototype.resetView = function(){
                 this.suggestList.className = "suggestions hidden";
             };
 
-            autoSearch.prototype.clearList = function(){
+            dataList.prototype.clearList = function(){
                 var li = this.suggestList.getElementsByTagName('li'), i=0;
                 i = li.length;
                 for(i;i > 0;i--)
@@ -287,7 +288,7 @@
 
             };
 
-            autoSearch.prototype.addElement = function(value,s){
+            dataList.prototype.addElement = function(value,s){
 
                 var newLi = document.createElement('li');
 
@@ -312,12 +313,12 @@
 
             }
 
-            autoSearch.prototype.loadSuggestions = function(newSuggestions){
+            dataList.prototype.loadSuggestions = function(newSuggestions){
                 // Takes and array of suggestions
                 this.suggestions = newSuggestions;
             }
 
-            autoSearch.prototype.setUpCallBack = function(){
+            dataList.prototype.setUpCallBack = function(){
                 var autosuggest = this;
                 var callback = function(e)
                 {
@@ -343,14 +344,14 @@
                     document.body.onclick = resetback;
                 }
             }
-            autoSearch.prototype.updateField = function(value){
+            dataList.prototype.updateField = function(value){
                 var value = value.textContent || value.innerText;
                 this.field.value = value;
                 this.resetView();
             }
 
             for(ix = 0; ix < inputs.length; ix++){
-                var a = new autoSearch(inputs[ix]);
+                var a = new dataList(inputs[ix]);
                 var list, arr = [];
 
                 if(datalists[inputs[ix].getAttribute('list')]){
