@@ -38,7 +38,19 @@
         }
         return true;
     };
-    /*@merge
+
+	/*@clone
+        Merge Objects together, allowing for object defaults.
+    */
+    JObject.prototype.clone = function () {
+		var obj = {};
+		for (var key in this.obj) {
+            obj[key] = this.obj[key];
+        }
+        return obj;
+    };
+
+	/*@merge
         Merge Objects together, allowing for object defaults.
     */
     JObject.prototype.mergeWith = function (obj, overwrite) {

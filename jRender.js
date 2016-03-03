@@ -1,8 +1,10 @@
 /*@Jrender.js
     Description: Jumpstart Module, template renderer engine.
 */
+J.require('objectFunctions.js');
+J.require('polyfilFunctions.js');
 (function (J) {
-    "use strict";
+    //"use strict";
 
     var BIND = 'data-j-bind',
         ATTRIBUTE = 'data-j-attribute',
@@ -48,29 +50,38 @@
         }
     };
 
-	// JTemplateField = new J.Class();
-	// JTemplateField.prototype.init = function (){
-	//
-	// }
-	//
-	// JTemplateField.prototype.set = function (){
-	//
-	// }
-	//
-	// JTemplateField.prototype.get = function (){
-	//
-	// }
+	var JTemplateField = new J.Class();
+	JTemplateField.prototype.formula = null;
+
+	JTemplateField.prototype.init = function (fieldName, fieldValue, template, formula){
+		this.template = template;
+
+		this.fieldName = fieldName;
+		this.fieldValue = fieldValue;
+
+		this.formula = formula;
+		return this;
+	}
+
+	JTemplateField.prototype.set = function (newValue){
+		if (!this.formula === null){
+			newValue = this.template.evaluate
+		}
+	}
+
+	JTemplateField.prototype.get = function (){
+
+	}
 
 
-    J.render = function (templateNode, dataObj, rootElement) {
+    J.render = function (templateNode, newModel, rootElement) {
         // Only Accepts HTML5 Templates.
         var i = 0,
-            template = new J.Template(),
+		    template,
             dataElements,
             boundElements,
-            dataAttributes;
-
-        dataObj = (typeof dataObj === "undefined") ? {} : dataObj; // Create a blank data context
+            dataAttributes,
+			model = (typeof newModel === "undefined") ? {} : J.object(newModel).clone(); // Create a blank data context
 
         function bindData(elem) {
             var newNode, set;
@@ -94,18 +105,18 @@
                     }
                     break;
                 default:
-                    newNode = template.evaluate(elem.getAttribute(BIND));
+                    newNodeValue = template.evaluate(elem.getAttribute(BIND));
 
-                    if (!template.evaluate(elem.getAttribute(BIND))) {
-                        // If evaluation fails, scan the element for data.
-                        if (elem.textContent !== "") {
-                            newNode = elem.textContent;
-                            elem.textContent = "";
-                        }
-                    }
-                    newNode = document.createTextNode(newNode);
+                    if (newNodeValue === false && elem.textContent !== "") {
+                        newNodeValue = elem.textContent;
+                        elem.textContent = "";
+                    } else if(newNodeValue === false ){
+						newNodeValue = "";
+					}
+
+                    newNode = document.createTextNode(newNodeValue);
                     template.addBoundParameter(elem.getAttribute(BIND), elem.appendChild(newNode));
-                    break;
+					break;
                 }
 
                 return true;
@@ -134,18 +145,24 @@
             }
         }
 
-        if (!templateNode.content) {
-            template.setTemplateElement(templateNode);
+		if (!templateNode.content) {
+			//	Not a valid HTML5 template browser.
+			var frag = document.createDocumentFragment();
+			for(var c = 0; c < templateNode.children.length; c += 1) {
+				frag.appendChild(templateNode.children[c].cloneNode(true));
+			}
+			templateNode = frag;
         } else if (!templateNode.content.querySelector(rootElement)) {
             throw ("J.Render: Template doesn't contain specified rootElement " + rootElement);
         } else {
             // It's an HTML5 Template, import it's specified root node.
-            template.setTemplateElement(document.importNode(templateNode.content.querySelector(rootElement), true));
-        }
+            templateNode = document.importNode(templateNode.content, true);
+		}
 
-        template.setDataContext(dataObj);
+        template = new J.Template(templateNode, model);
 
         dataElements = template.getTemplateElement().querySelectorAll("[" + BIND + "]");
+
         for (i; i < dataElements.length; i += 1) {
             bindData(dataElements[i]);
         }
@@ -165,41 +182,34 @@
 
     J.Template = new J.Class();
 
-    J.Template.prototype.init = function (templateElement, dataContext) {
+    J.Template.prototype.init = function (templateElement, dataModel) {
         this.nodes = {};
         this.observers = [];
 
 		var thisTemplateElement = templateElement || document.createElement('template');
+		var thisModel = dataModel || {};
+
+
 		this.getTemplateElement = function () {
 			return thisTemplateElement;
-		}
+		}.bind(this);
 		this.setTemplateElement = function (newTemplateElement) {
 			thisTemplateElement = newTemplateElement;
-		}
+		}.bind(this);
 
-
-        if (typeof dataContext !== "undefined") {
-            this.setDataContext(dataContext);
-        }
-    };
-
-    // Sets the template element.
-    J.Template.prototype.setDataContext = function (dataContext) {
-        // If the datacontext has been set before, update all bound params.
-        var name;
-        if (typeof this.dataContext !== "undefined") {
-            // Now update the internal reference.
-            this.dataContext = dataContext;
-            for (name in this.nodes) {
+		this.getDataModel = function () {
+			return thisModel;
+		}.bind(this);
+		this.setDataModel = function (newDataModel) {
+			thisModel = newDataModel;
+			for (name in this.nodes) {
                 if (this.nodes.hasOwnProperty(name)) {
                     this['set' + capitalizeFirstLetter(name)](this.evaluate(name));
                 }
             }
-        } else {
-            // Now update the internal reference.
-            this.dataContext = dataContext;
-        }
+		}.bind(this);
 
+		return this;
     };
 
     J.Template.prototype.getter = function (name) {
@@ -242,19 +252,24 @@
                 }
             }
         }
+
         // Update the data context last:
         try {
             this.updateDataContext(name, newValue);
         } catch (e) {
-            window.console.log(e);
+	        J.log(e, 'error');
         }
 
     };
 
-    // Adds a data bound parameter with getters and setters to the template API.
+    /**
+		function addBoundParameter: Adds a data bound parameter with getters and setters to the template API.
+		@name: The text string name of the new bound parameter.
+		@node: A reference to an HTML node to which the data is bound.
+	*/
     J.Template.prototype.addBoundParameter = function (name, node) {
         // Adds methods for manipulating an injected parameter.
-        if (!this.getTemplateElement().contains(node)) {
+		if (!this.getTemplateElement().contains(node)) {
             var e = new JTemplateException("J.Template must contain argument node", {
                 'node': node,
                 'element': this.getTemplateElement()
@@ -262,6 +277,7 @@
             e.throwException();
         }
 
+		// If the named parameter is new, create it in the nodes array.
         if (this.nodes[name] === undefined) {
             this.nodes[name] = [node];
 
@@ -272,20 +288,24 @@
                 return this.setter(name, newValue);
             };
         } else {
+			//	Push the node onto the existsing nodes array for update when set.
             this.nodes[name].push(node);
         }
 
         /* Add any eventListeners */
         switch (node.nodeName) {
         case 'INPUT':
+		case 'TEXTAREA':
             node.addEventListener('change', function (evt) {
                 this.setter(name, evt.currentTarget.value);
             }.bind(this));
             break;
         case 'SELECT':
-            break;
-        case 'TEXTAREA':
-            break;
+			node.addEventListener('change', function (evt) {
+				var currentIndex =  evt.currentTarget.options.selectedIndex;
+				this.setter(name, evt.currentTarget.options[currentIndex]);
+			}.bind(this));
+			break;
         default:
             // For non-input elements, add mutation observers.
             if (!!window.MutationObserver) {
@@ -314,23 +334,21 @@
     };
 
     J.Template.prototype.updateDataContext = function (name, value, context) {
-        var current;
+		var nameArray = name.split(".");
+        var current = nameArray.shift();
 
         if (typeof context === "undefined") {
-            context = this.dataContext;
+            context = this.getDataModel();
         }
-
-        name = name.split(".");
-        current = name.shift();
 
         switch (typeof context[current]) {
         case "object":
-            return !!context[current] ? this.evaluate(name.join('.'), context[current]) : (context[current] = value);
+            return !!context[current] ?
+				this.updateDataContext(nameArray.join('.'), value, context[current]) : (context[current] = value);
         default:
             context[current] = value;
-            return;
+            return true;
         }
-
     };
 
     J.Template.prototype.evaluate = function (param, context) {
@@ -338,7 +356,7 @@
         var current;
 
         if (typeof context === "undefined") {
-            context = this.dataContext;
+            context = this.getDataModel();
         }
 
         param = param.split(".");
@@ -360,25 +378,48 @@
         }
     };
 
-    J.Template.prototype.evaluateInterpolation = function (string) {
-        var testExp = /(?:\{)([\D\W\.]+)(\})/,
-            value = this.evaluate(string.match(testExp)[1]);
+	J.Template.prototype.interpolationExpression =/(?:\{)([\d\w\.]+)(\:((?:[1-9][\d]*(?:\.[\d]+))|0|null|true|false|(?:(\'|\")([^\4]*)\4)))?(?:\})/i;
 
-        if (!!value) {
-            string = string.replace(testExp, value);
-        }
+    J.Template.prototype.evaluateInterpolation = function (str) {
+		//	Capture Groups:
+		//	0:	The entire match.
+		//	1:	Parameter name.
+		//	2:	Default value if exists, including ':'
+		//	3:	Default value if exists.
+		//	4:	The delimter of a string.
 
-        return string;
+		var matches = this.interpolationExpression.exec(str);
+
+        var param = matches[1];
+		var value = this.evaluate(param);
+
+		str = str.replace(this.interpolationExpression, function(match, p1, p2, p3, p4) {
+			//	If the value is found, use it.
+			if (!!value) {
+				return value;
+			} else if (p3 !== ''){
+				//	If a default value is expressed in the expression, use it.
+				this.updateDataContext(p1, p3);
+				return p3;
+			} else {
+				//	Else, return a blank string.
+				return '';
+			}
+		}.bind(this));
+
+
+        return str;
     };
-    J.Template.prototype.requiresInterpolation = function (string) {
-        var testExp = /(?:\{)([\D\W\.]+)(\})/;
-        return !!testExp.test(string);
+
+    J.Template.prototype.requiresInterpolation = function (str) {
+		return !!this.interpolationExpression.test(str);
     };
 
     // Default text node parameter binding functions.
     J.Template.prototype.getTextNode = function (node) {
         return node.nodeValue; // Return the string content of the text node containing the bound value.
     };
+
     J.Template.prototype.setTextNode = function (node, value) {
         value = (typeof value === 'undefined') ? '' : value;
         node.nodeValue = value;
@@ -419,25 +460,67 @@
         return;
     };
 
+	var shallowCopyOfNodeReferences = [];
+	var templateInsertionPoint = [];
     J.Template.prototype.render = function (targetElement) {
-        targetElement.appendChild(this.getTemplateElement());
+		//	IE Needs some convincing.
+		if (!this.getTemplateElement().children){
+			this.getTemplateElement().children = (function(e){
+				var children = [];
+				for(var x = 0; x < e.childNodes.length; x += 1){
+					if(e.childNodes[x].nodeType === Node.ELEMENT_NODE){
+						children.push(e.childNodes[x]);
+					}
+				}
+				return children;
+			})(this.getTemplateElement());
+		}
+
+		shallowCopyOfNodeReferences = [].slice.call(this.getTemplateElement().children, 0);
+		templateInsertionPoint = targetElement;
+
+		templateInsertionPoint.appendChild(this.getTemplateElement());
+
         return;
     };
+
     J.Template.prototype.remove = function () {
-        var parent = this.getTemplateElement().parentNode,
-            child = this.getTemplateElement();
+		//	Remove Nodes.
+		var fragment = document.createDocumentFragment();
+		while(shallowCopyOfNodeReferences.length > 0) {
+			fragment.appendChild(templateInsertionPoint.removeChild(shallowCopyOfNodeReferences.pop()));
+		}
+		this.setTemplateElement(fragment);
 
-        if (this.observers.length > 0) {
-            this.observers.forEach(function (observer) {
-                observer.disconnect();
-            });
-        }
-
-        parent.removeChild(child);
-        //if (parent.removeChild !== null) {
-        //}
         return;
     };
 
+	J.Template.prototype.find = function(querySelectorString){
+		if (shallowCopyOfNodeReferences.length === 0){
+			return this.getTemplateElement().querySelector(querySelectorString);
+		} else {
+			var element;
+			for(var i = 0; i < shallowCopyOfNodeReferences.length; i += 1){
+				element = shallowCopyOfNodeReferences[i];
+				if(element.querySelector(querySelectorString)){
+					return element.querySelector(querySelectorString);
+				}
+			}
+			return null;
+		}
+	}
+
+	J.Template.prototype.findAll = function(querySelectorString){
+		if (shallowCopyOfNodeReferences.length === 0){
+			return this.getTemplateElement().querySelectorAll(querySelectorString);
+		} else {
+			for(element in shallowCopyOfNodeReferences){
+				if(element.querySelectorAll(querySelectorString).length > 0){
+					return element.querySelector(querySelectorString);
+				}
+			}
+			return new NodeList();
+		}
+	}
 
 }(window.J));
