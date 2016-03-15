@@ -311,28 +311,26 @@
                     newElement.onclick = callback;
                 }
 
-            }
+            };
 
             dataList.prototype.loadSuggestions = function(newSuggestions){
                 // Takes and array of suggestions
                 this.suggestions = newSuggestions;
-            }
+            };
 
             dataList.prototype.setUpCallBack = function(){
                 var autosuggest = this;
-                var callback = function(e)
-                {
+                var callback = function(e) {
                     "use strict";
-                    var e = e || window.event;
+                    var evt = e || window.event;
                     autosuggest.update(this.value);
-                }
+                };
 
-                var resetback = function(e)
-                {
+                var resetback = function(e) {
                     "use strict";
-                    var e = e || window.event;
+                    var evt = e || window.event;
                     autosuggest.resetView();
-                }
+                };
 
                 if(window.addEventListener)
                 {
@@ -343,12 +341,12 @@
                     this.field.onkeyup = callback;
                     document.body.onclick = resetback;
                 }
-            }
+            };
             dataList.prototype.updateField = function(value){
-                var value = value.textContent || value.innerText;
-                this.field.value = value;
+                var fValue = value.textContent || value.innerText;
+                this.field.value = fValue;
                 this.resetView();
-            }
+            };
 
             for(ix = 0; ix < inputs.length; ix++){
                 var a = new dataList(inputs[ix]);

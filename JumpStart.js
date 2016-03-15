@@ -68,7 +68,7 @@
 			document.write('<script src="' + J.value('rootPath') + '/' + libraryFileName + '"><\/script>');
 		}
 		return;
-	}
+	};
 
 	n.log = function(obj, severity){
 		var severe = severity || 'info';
@@ -85,7 +85,7 @@
 
 			consoleOptions[severe].bind(console, obj).call();
 		}
-	}
+	};
 
     function s(e) {
 		var i = 0, l = j.length;

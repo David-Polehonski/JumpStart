@@ -19,7 +19,9 @@ if(!Window.Promise) {
 			};
 		}
 
-		var isArray = Array.isArray || function(value) { return Object.prototype.toString.call(value) === "[object Array]" };
+		var isArray = Array.isArray || function(value) {
+			return Object.prototype.toString.call(value) === "[object Array]";
+		};
 
 		function Promise(fn) {
 			if (typeof this !== 'object') throw new TypeError('Promises must be constructed via new');
@@ -142,7 +144,7 @@ if(!Window.Promise) {
 						if (val && (typeof val === 'object' || typeof val === 'function')) {
 							var then = val.then;
 							if (typeof then === 'function') {
-								then.call(val, function (val) { res(i, val) }, reject);
+								then.call(val, function (val) { res(i, val); }, reject);
 								return;
 							}
 						}
@@ -237,7 +239,7 @@ if (!Array.prototype.forEach) {
     // 3. Let len be toUint32(lenValue).
     var len = O.length >>> 0;
 
-    
+
     if (typeof callback !== "function") {
       throw new TypeError(callback + ' is not a function');
     }

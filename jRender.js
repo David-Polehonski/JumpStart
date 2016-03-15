@@ -61,17 +61,17 @@ J.require('polyfilFunctions.js');
 
 		this.formula = formula;
 		return this;
-	}
+	};
 
 	JTemplateField.prototype.set = function (newValue){
-		if (!this.formula === null){
-			newValue = this.template.evaluate
+		if (this.formula !== null){
+			newValue = this.template.evaluate;
 		}
-	}
+	};
 
 	JTemplateField.prototype.get = function (){
 
-	}
+	};
 
 
     J.render = function (templateNode, newModel, rootElement) {
@@ -202,7 +202,7 @@ J.require('polyfilFunctions.js');
 		}.bind(this);
 		this.setDataModel = function (newDataModel) {
 			thisModel = newDataModel;
-			for (name in this.nodes) {
+			for (var name in this.nodes) {
                 if (this.nodes.hasOwnProperty(name)) {
                     this['set' + capitalizeFirstLetter(name)](this.evaluate(name));
                 }
@@ -508,19 +508,19 @@ J.require('polyfilFunctions.js');
 			}
 			return null;
 		}
-	}
+	};
 
 	J.Template.prototype.findAll = function(querySelectorString){
 		if (shallowCopyOfNodeReferences.length === 0){
 			return this.getTemplateElement().querySelectorAll(querySelectorString);
 		} else {
-			for(element in shallowCopyOfNodeReferences){
+			for(var element in shallowCopyOfNodeReferences){
 				if(element.querySelectorAll(querySelectorString).length > 0){
 					return element.querySelector(querySelectorString);
 				}
 			}
 			return new NodeList();
 		}
-	}
+	};
 
 }(window.J));

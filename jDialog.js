@@ -143,26 +143,14 @@
 			var newDialog = null,
 				closeButton = null;
 
-			content = document.createDocumentFragment();
-			newDialog = content.appendChild(document.createElement(inst.config.dialogRootElement));
-
-			newDialog.className = 'dialog-window inactive ' + inst.config.dialogRootClass;
-
-			if (inst.config.contentNode !== null) {
-				// Dialog window is being passed in.
-				if (inst.config.preserveContent) {
-				 	inst.config.contentNode = inst.config.contentNode.cloneNode(true);
-					J.log(inst.config.contentNode);
-				}
-				newDialog.appendChild(inst.config.contentNode);
-			}
+			inst.setContent(inst.config.contentNode);
 
 			if (inst.config.animationStyle !== null) {
 				if (inst.config.animationLength === null) {
 					throw('Mis-configured jDialog. animationStyle specified without animationLength.');
 				}
-				newDialog.className += ' ' + inst.config.animationStyle;
-				newDialog.className += ' ' + inst.config.animationLength;
+				inst.content.className += ' ' + inst.config.animationStyle;
+				inst.content.className += ' ' + inst.config.animationLength;
 				inst.animated = true;
 			}
 
@@ -176,15 +164,12 @@
 				}
 
 				if (closeButton !== null) {
-					closeButton = newDialog.appendChild(closeButton);
+					closeButton = inst.content.appendChild(closeButton);
 					closeButton.addEventListener('click', inst.hide.bind(inst), false);
 				}
 			}
 
-
-			this.container.appendChild(content); // Single instance insert
-
-			newDialog.addEventListener('click', function (e) {
+			inst.content.addEventListener('click', function (e) {
 				e = e || window.event;
 				e.cancelBubble = true;
 				if (e.stopPropagation) e.stopPropagation();
@@ -196,7 +181,7 @@
 				inst.config.ie8Mode = true;
 			}
 
-			return newDialog;
+			return inst.content;
 		},
 		'closeDialogues': function () {
 			this.dialogues.forEach(function(current, i, a){
@@ -250,7 +235,7 @@
 		},
 		'close': function (then) {
 			function closeContainer() {
-				if (this.container.className.indexOf(' open') != -1) {
+				if (this.container.className.indexOf(' open') !== -1) {
 					this.container.className =  this.container.className.replace(' open', '');
 				}
 			}
@@ -325,6 +310,7 @@
 
 			return this;
         };
+
 		J.Dialog.prototype.animate = function (next) {
 			if (this.content.className.indexOf('animate') === -1) {
 				this.content.className += ' animate';
@@ -339,17 +325,7 @@
         J.Dialog.prototype.display = function (replaceContent) {
 
 			if (!!replaceContent){
-				var oldContent = document.createDocumentFragment();
-				var newContent = document.createDocumentFragment();
-
-				var root = newContent.appendChild(document.createElement(this.config.dialogRootElement));
-				root.className = 'dialog-window inactive ' + this.config.dialogRootClass;
-				root.appendChild(replaceContent);
-
-				oldContent.appendChild(this.content); //	Removes from dom.
-
-				this.content = root;
-				this.container.container.appendChild(newContent);
+				this.setContent(replaceContent);
 			}
 
 			if (this.content.className.indexOf('inactive') !== -1) {
@@ -377,8 +353,12 @@
 				if ('ie8Mode' in this.config) {
 					this.container.container.setAttribute('eventName','dialogClosed');
 				} else {
-					var event = new CustomEvent('dialogClosed', { 'detail': this, 'bubbles': true, 'cancelable': true});
-					this.content.dispatchEvent(event);
+					var _event = new CustomEvent('dialogClosed', {
+						'detail': this,
+						'bubbles': true,
+						'cancelable': true
+					});
+					this.content.dispatchEvent(_event);
 				}
 			}
 			var next = hideWindow.bind(this);
@@ -400,6 +380,25 @@
 			this.content.parentNode.removeChild(this.content);
 			delete this.content;
 			this.state = null;
+		};
+
+		J.Dialog.prototype.setContent = function(newContentNode){
+			var newContent = document.createDocumentFragment();
+			var oldContent = this.content || null;
+
+			//	Set the new dialog root element:
+			this.content = newContent.appendChild(document.createElement(this.config.dialogRootElement));
+
+			//	Set the className to dialog + config class root.
+			this.content.className = 'dialog-window inactive ' + this.config.dialogRootClass;
+
+			//	Insert new node.
+			this.content.appendChild(newContentNode);
+			if(oldContent !== null) {
+				this.container.container.replaceChild(this.content, oldContent);
+			} else {
+				this.container.container.appendChild(this.content);
+			}
 		};
 
     }
