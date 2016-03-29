@@ -228,7 +228,7 @@
 		},
 		'open': function (then) {
 			var next = then || null;
-			if (this.container.className.indexOf('open') === -1) {
+			if (this.container.className.indexOf(J.Dialog.OPEN) === -1) {
 				this.container.className += ' open';
 			}
 			setTimeout(this.animate.bind(this), 50, next);
@@ -253,7 +253,7 @@
 				case 'dialogClosed':
 				case 'dialogDestroyed':
 					for (var i = 0; i < this.dialogues.length; i += 1) {
-						if (this.dialogues[i].state === 'open') {
+						if (this.dialogues[i].state === J.Dialog.OPEN) {
 							return;
 						}
 					}
@@ -269,8 +269,11 @@
 
         J.Dialog = new J.Class();
 
+		J.Dialog.OPEN = 0;
+		J.Dialog.CLOSED = 1;
+
 		J.Dialog.FADE_IN = 'fade-in';
-		J.Dialog.SLIDE_UP= 'slide-up';
+		J.Dialog.SLIDE_UP = 'slide-up';
 
 		J.Dialog.ONE_MS = 'duration-1';
 		J.Dialog.TWO_MS = 'duration-2';
@@ -289,7 +292,7 @@
 
 		//	Properties.
 		J.Dialog.prototype.dialog = null; // Root HTML Element for the dialog content.
-		J.Dialog.prototype.state = null;
+		J.Dialog.prototype.state = J.Dialog.CLOSED;
 		J.Dialog.prototype.animated = false;
 
 		J.Dialog.prototype.defaultConfig = {
@@ -323,14 +326,14 @@
 		};
 
         J.Dialog.prototype.display = function (replaceContent) {
-
+			if(this.state === J.Dialog.OPEN){ return; }
 			if (!!replaceContent){
 				this.setContent(replaceContent);
 			}
 
 			if (this.content.className.indexOf('inactive') !== -1) {
 				this.content.className = this.content.className.replace(' inactive','');
-				this.state = 'open';
+				this.state = J.Dialog.OPEN;
 				if (this.animated) {
 					setTimeout(this.animate.bind(this),50);
 				}
@@ -348,7 +351,7 @@
 			function hideWindow(){
 				if (this.content.className.indexOf('inactive') === -1) {
 					this.content.className += ' inactive';
-					this.state = 'closed';
+					this.state = J.Dialog.CLOSED;
 				}
 				if ('ie8Mode' in this.config) {
 					this.container.container.setAttribute('eventName','dialogClosed');
@@ -363,9 +366,9 @@
 			}
 			var next = hideWindow.bind(this);
 
-			if (this.animated && this.state === 'open') {
+			if (this.animated && this.state === J.Dialog.OPEN) {
 				this.animate(next);
-			}else if (this.state === 'open'){
+			}else if (this.state === J.Dialog.OPEN){
 				next();
 			}
 		};
