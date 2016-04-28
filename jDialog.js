@@ -86,7 +86,7 @@
 
 			_css = (document.head || document.getElementsByTagName('head')[0]).insertBefore(newStyleSheet, document.getElementsByTagName('link')[0]);
 
-			J.styles.addRules("html.dialog-lock", ["height: 100%", "width: 100%"]);
+			J.styles.addRules("html.dialog-lock", ["height: 100%", "width: 100%", "overflow-y: scroll;"]);
 
 			J.styles.addRules(".dialog-container", ["display: none"]);
 
@@ -200,7 +200,7 @@
 
 				bodyElement.setAttribute('style',"height: 100%; "+
 					"width: 100%; "+
-					"overflow: auto; "+
+					"overflow: visible; "+
 					"position: fixed; "+
 					"top:" + -window.pageYOffset + 'px');
 
