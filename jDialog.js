@@ -74,6 +74,9 @@
 			if (J.Dialog.containerAnimationLength !== null) {
 				this.container.className += ' ' + J.Dialog.containerAnimationLength;
 			}
+			if (J.Dialog.containerClassName !== null) {
+				this.container.className += ' ' + J.Dialog.containerClassName;
+			}
 		},
 		'loadCss': function () {
 
@@ -198,8 +201,8 @@
 				bodyElement.setAttribute('style',"height: 100%; "+
 					"width: 100%; "+
 					"overflow: auto; "+
-					"position: fixed "+
-					-window.pageYOffset + 'px');
+					"position: fixed; "+
+					"top:" + -window.pageYOffset + 'px');
 
 				htmlElement.className += (" " + cssClass);
 			}
@@ -295,6 +298,7 @@
 
 		J.Dialog.containerAnimationStyle = J.Dialog.FADE_IN;
 		J.Dialog.containerAnimationLength = J.Dialog.ONE_MS;
+		J.Dialog.containerClassName = 'default';
 
 		//	Properties.
 		J.Dialog.prototype.dialog = null; // Root HTML Element for the dialog content.
@@ -303,6 +307,7 @@
 
 		J.Dialog.prototype.defaultConfig = {
 		 	'preserveContent': true,
+			'dialogContainerClass': 'default',
 			'dialogRootElement': 'div',
 			'dialogRootClass': '',
 			'contentNode': null,
