@@ -515,8 +515,9 @@ J.require('polyfilFunctions.js');
 			return this.getTemplateElement().querySelectorAll(querySelectorString);
 		} else {
 			for(var element in shallowCopyOfNodeReferences){
+				element = shallowCopyOfNodeReferences[element];
 				if(element.querySelectorAll(querySelectorString).length > 0){
-					return element.querySelector(querySelectorString);
+					return element.querySelectorAll(querySelectorString);
 				}
 			}
 			return new NodeList();
