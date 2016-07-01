@@ -74,6 +74,9 @@
 			if (J.Dialog.containerAnimationLength !== null) {
 				this.container.className += ' ' + J.Dialog.containerAnimationLength;
 			}
+			if (J.Dialog.containerClassName !== null) {
+				this.container.className += ' ' + J.Dialog.containerClassName;
+			}
 		},
 		'loadCss': function () {
 
@@ -83,7 +86,7 @@
 
 			_css = (document.head || document.getElementsByTagName('head')[0]).insertBefore(newStyleSheet, document.getElementsByTagName('link')[0]);
 
-			J.styles.addRules("html.dialog-lock", ["height: 100%", "width: 100%"]);
+			J.styles.addRules("html.dialog-lock", ["height: 100%", "width: 100%", "overflow-y: scroll;"]);
 
 			J.styles.addRules(".dialog-container", ["display: none"]);
 
@@ -143,24 +146,14 @@
 			var newDialog = null,
 				closeButton = null;
 
-			if (inst.config.contentNode !== null) {
-				// Dialog window is being passed in.
-				newDialog = inst.config.contentNode.cloneNode(true);
-				if (inst.config.preserveContent === false) {
-				 	inst.contentNode.parentNode.removeChild(inst.contentNode);
-				}
-			} else {
-				newDialog = document.createElement(inst.config.dialogRootElement);
-			}
-
-			newDialog.className = 'dialog-window inactive ' + inst.config.dialogRootClass;
+			inst.setContent(inst.config.contentNode);
 
 			if (inst.config.animationStyle !== null) {
 				if (inst.config.animationLength === null) {
 					throw('Mis-configured jDialog. animationStyle specified without animationLength.');
 				}
-				newDialog.className += ' ' + inst.config.animationStyle;
-				newDialog.className += ' ' + inst.config.animationLength;
+				inst.content.className += ' ' + inst.config.animationStyle;
+				inst.content.className += ' ' + inst.config.animationLength;
 				inst.animated = true;
 			}
 
@@ -174,14 +167,12 @@
 				}
 
 				if (closeButton !== null) {
-					closeButton = newDialog.appendChild(closeButton);
+					closeButton = inst.content.appendChild(closeButton);
 					closeButton.addEventListener('click', inst.hide.bind(inst), false);
 				}
 			}
 
-			newDialog = this.container.appendChild(newDialog);
-
-			newDialog.addEventListener('click', function (e) {
+			inst.content.addEventListener('click', function (e) {
 				e = e || window.event;
 				e.cancelBubble = true;
 				if (e.stopPropagation) e.stopPropagation();
@@ -193,7 +184,7 @@
 				inst.config.ie8Mode = true;
 			}
 
-			return newDialog;
+			return inst.content;
 		},
 		'closeDialogues': function () {
 			this.dialogues.forEach(function(current, i, a){
@@ -209,9 +200,9 @@
 
 				bodyElement.setAttribute('style',"height: 100%; "+
 					"width: 100%; "+
-					"overflow: auto; "+
-					"position: fixed "+
-					-window.pageYOffset + 'px');
+					"overflow: visible; "+
+					"position: fixed; "+
+					"top:" + -window.pageYOffset + 'px');
 
 				htmlElement.className += (" " + cssClass);
 			}
@@ -242,30 +233,36 @@
 			var next = then || null;
 			if (this.container.className.indexOf('open') === -1) {
 				this.container.className += ' open';
+				setTimeout(this.animate.bind(this), 50, next);
 			}
-			setTimeout(this.animate.bind(this), 50, next);
 		},
 		'close': function (then) {
-			function closeContainer() {
-				if (this.container.className.indexOf(' open') != -1) {
-					this.container.className =  this.container.className.replace(' open', '');
-				}
+			this.animate(this.closeContainer.bind(this));
+		},
+		'closeContainer': function closeContainer() {
+			if (this.container.className.indexOf('open') != -1){
+				this.container.className = this.container.className.replace(/\s?open/, '');
 			}
-			this.animate(closeContainer.bind(this));
 		},
 		'update': function (e) {
 			// Update ths display if all dialogues are closed.
-
+			var i = 0;
 			switch (e.type){
 				case 'dialogOpened':
 					this.lockScreen();
 					this.open();
 
+					for (i; i < this.dialogues.length; i += 1) {
+						if (e.detail != this.dialogues[i]) {
+							this.dialogues[i].hideWindow();
+						}
+					}
+
 					break;
 				case 'dialogClosed':
 				case 'dialogDestroyed':
-					for (var i = 0; i < this.dialogues.length; i += 1) {
-						if (this.dialogues[i].state === 'open') {
+					for (i; i < this.dialogues.length; i += 1) {
+						if (this.dialogues[i].state === J.Dialog.OPEN) {
 							return;
 						}
 					}
@@ -281,8 +278,11 @@
 
         J.Dialog = new J.Class();
 
+		J.Dialog.OPEN = 0;
+		J.Dialog.CLOSED = 1;
+
 		J.Dialog.FADE_IN = 'fade-in';
-		J.Dialog.SLIDE_UP= 'slide-up';
+		J.Dialog.SLIDE_UP = 'slide-up';
 
 		J.Dialog.ONE_MS = 'duration-1';
 		J.Dialog.TWO_MS = 'duration-2';
@@ -298,14 +298,16 @@
 
 		J.Dialog.containerAnimationStyle = J.Dialog.FADE_IN;
 		J.Dialog.containerAnimationLength = J.Dialog.ONE_MS;
+		J.Dialog.containerClassName = 'default';
 
 		//	Properties.
 		J.Dialog.prototype.dialog = null; // Root HTML Element for the dialog content.
-		J.Dialog.prototype.state = null;
+		J.Dialog.prototype.state = J.Dialog.CLOSED;
 		J.Dialog.prototype.animated = false;
 
 		J.Dialog.prototype.defaultConfig = {
 		 	'preserveContent': true,
+			'dialogContainerClass': 'default',
 			'dialogRootElement': 'div',
 			'dialogRootClass': '',
 			'contentNode': null,
@@ -316,28 +318,33 @@
 		J.Dialog.prototype.init = function (configObj) {
 			configObj = configObj || {};
             this.container = getContainer();
+
 			this.config = J.object(configObj).mergeWith(this.defaultConfig);
+			this.content = this.container.createNewDialog(this);
 
 			return this;
         };
+
 		J.Dialog.prototype.animate = function (next) {
-			if (this.dialog.className.indexOf('animate') === -1) {
-				this.dialog.className += ' animate';
+			if (this.content.className.indexOf('animate') === -1) {
+				this.content.className += ' animate';
 			} else {
-				this.dialog.className =  this.dialog.className.replace(' animate', '');
+				this.content.className =  this.content.className.replace(' animate', '');
 			}
 			if (typeof next === 'function'){
 				setTimeout(next, J.Dialog.DURATIONS[this.config.animationLength]);
 			}
 		};
-        J.Dialog.prototype.display = function () {
-			if (!this.dialog) {
-				this.dialog = this.container.createNewDialog(this);
+
+        J.Dialog.prototype.display = function (replaceContent) {
+			if(this.state === J.Dialog.OPEN){ return; }
+			if (!!replaceContent){
+				this.setContent(replaceContent);
 			}
 
-			if (this.dialog.className.indexOf('inactive') !== -1) {
-				this.dialog.className = this.dialog.className.replace(' inactive','');
-				this.state = 'open';
+			if (this.content.className.indexOf('inactive') !== -1) {
+				this.content.className = this.content.className.replace(' inactive','');
+				this.state = J.Dialog.OPEN;
 				if (this.animated) {
 					setTimeout(this.animate.bind(this),50);
 				}
@@ -347,41 +354,65 @@
 				this.container.container.setAttribute('eventName','dialogOpened');
 			} else {
 				var event = new CustomEvent('dialogOpened', { 'detail': this, 'bubbles': true, 'cancelable': true});
-				this.dialog.dispatchEvent(event);
+				this.content.dispatchEvent(event);
 			}
 		};
 
         J.Dialog.prototype.hide = function () {
-			function hideWindow(){
-				if (this.dialog.className.indexOf('inactive') === -1) {
-					this.dialog.className += ' inactive';
-					this.state = 'closed';
-				}
-				if ('ie8Mode' in this.config) {
-					this.container.container.setAttribute('eventName','dialogClosed');
-				} else {
-					var event = new CustomEvent('dialogClosed', { 'detail': this, 'bubbles': true, 'cancelable': true});
-					this.dialog.dispatchEvent(event);
-				}
-			}
-			var next = hideWindow.bind(this);
+			var next = this.hideWindow.bind(this);
 
-			if (this.animated && this.state === 'open') {
+			if (this.animated && this.state === J.Dialog.OPEN) {
 				this.animate(next);
-			}else if (this.state === 'open'){
+			}else if (this.state === J.Dialog.OPEN){
 				next();
 			}
 		};
 
+		J.Dialog.prototype.hideWindow = function hideWindow() {
+			if (this.content.className.indexOf('inactive') === -1) {
+				this.content.className += ' inactive';
+				this.state = J.Dialog.CLOSED;
+			}
+			if ('ie8Mode' in this.config) {
+				this.container.container.setAttribute('eventName','dialogClosed');
+			} else {
+				var _event = new CustomEvent('dialogClosed', {
+					'detail': this,
+					'bubbles': true,
+					'cancelable': true
+				});
+				this.content.dispatchEvent(_event);
+			}
+		};
+
         J.Dialog.prototype.destroy = function () {
-			this.dialog.parentNode.removeChild(this.dialog);
-			delete this.dialog;
-			this.state = null;
 			if ('ie8Mode' in this.config) {
 				this.container.container.setAttribute('eventName','dialogDestroyed');
 			} else {
 				var event = new CustomEvent('dialogDestroyed', { 'detail': this, 'bubbles': true, 'cancelable': true});
-				this.dialog.dispatchEvent(event);
+				this.content.dispatchEvent(event);
+			}
+			this.content.parentNode.removeChild(this.content);
+			delete this.content;
+			this.state = null;
+		};
+
+		J.Dialog.prototype.setContent = function(newContentNode){
+			var newContent = document.createDocumentFragment();
+			var oldContent = this.content || null;
+
+			//	Set the new dialog root element:
+			this.content = newContent.appendChild(document.createElement(this.config.dialogRootElement));
+
+			//	Set the className to dialog + config class root.
+			this.content.className = 'dialog-window inactive ' + this.config.dialogRootClass;
+
+			//	Insert new node.
+			this.content.appendChild(newContentNode);
+			if(oldContent !== null) {
+				this.container.container.replaceChild(this.content, oldContent);
+			} else {
+				this.container.container.appendChild(this.content);
 			}
 		};
 

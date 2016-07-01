@@ -1,7 +1,7 @@
 /*
 	Default Decorative styles for jDialog
 */
-.dialog-container {
+.dialog-container.default {
 	background-color: #FFFFFF;
 	background-color: rgba(255,255,255,0.8);
 }
