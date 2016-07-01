@@ -14,7 +14,7 @@
 				return scripts[scripts.length-1].src;
 			}();
 		}
-	}().replace(/\/[a-zA-Z]+\.js$/, '/');
+	}().replace(/(?:\/minified)?\/[a-zA-Z]+\.js$/, '');
 
 	//	Class() - syntactic sugar function.
 	n.Class = function (className) {
