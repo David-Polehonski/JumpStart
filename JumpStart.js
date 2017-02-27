@@ -5,14 +5,18 @@
 		vars = {};
 
 	vars.rootPath = function () {
-		if (!!document.currentScript) {
+		if (!!document.currentScript && !!document.currentScript.src) {
 			return document.currentScript.src;
 		} else {
-			return function () {
-				//	Calculate root path by reading the last rendered script block from the page.
-				var scripts = document.getElementsByTagName('script');
-				return scripts[scripts.length-1].src;
-			}();
+			//	Calculate root path by reading the last rendered script block from the page.
+			var ss = document.getElementsByTagName('script');
+			if (!!ss[ss.length-1].src) {
+				return ss[ss.length-1].src;
+			} else if (!!ss[ss.length-1].dataset.path) {
+				return ss[ss.length-1].dataset.path;
+			} else {
+				return '/';
+			}
 		}
 	}().replace(/(?:\/minified)?\/[a-zA-Z]+\.js$/, '');
 
@@ -62,10 +66,30 @@
 		return null;
 	};
 
-	n.require = function(libraryFileName){
-		if(!document.querySelector("[src$='/" + libraryFileName + "']")){
-			n.log("Using require is discourage in production due to detrimental performance impact.","warning");
-			document.write('<script src="' + J.value('rootPath') + '/' + libraryFileName + '"><\/script>');
+
+	function addScript (path) {
+		var script = document.createElement('script');
+		script.src = path;
+		script.async = false;
+
+		document.head.appendChild(script);
+	}
+
+	n.require = function(jsFileName){
+		if (jsFileName.indexOf('/') === -1) {
+			n.log("Importing jumpStart." + jsFileName + ".");
+			if(!document.querySelector("[src$='/" + jsFileName + "']")) {
+				addScript(J.value('rootPath') + '/' + jsFileName);
+			} else {
+				n.log("External File." + jsFileName + " has already been imported.","warning");
+			}
+		} else {
+			n.log("Importing external." + jsFileName + ".");
+			if(!document.querySelector("[src='" + jsFileName + "']")) {
+				addScript(jsFileName);
+			} else {
+				n.log("External File." + jsFileName + " has already been imported.","warning");
+			}
 		}
 		return;
 	};
