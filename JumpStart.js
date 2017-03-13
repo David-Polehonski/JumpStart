@@ -67,10 +67,10 @@
 	};
 
 
-	function addScript (path) {
+	function addScript (path, _async) {
 		var script = document.createElement('script');
 		script.src = path;
-		script.async = false;
+		script.async = !!_async;
 
 		document.head.appendChild(script);
 	}
@@ -81,12 +81,31 @@
 			if(!document.querySelector("[src$='/" + jsFileName + "']")) {
 				addScript(J.value('rootPath') + '/' + jsFileName);
 			} else {
-				n.log("External File." + jsFileName + " has already been imported.","warning");
+				n.log("Internal File." + jsFileName + " has already been imported.","warning");
 			}
 		} else {
 			n.log("Importing external." + jsFileName + ".");
 			if(!document.querySelector("[src='" + jsFileName + "']")) {
 				addScript(jsFileName);
+			} else {
+				n.log("External File." + jsFileName + " has already been imported.","warning");
+			}
+		}
+		return;
+	};
+
+	n.include = function(jsFileName){
+		if (jsFileName.indexOf('/') === -1) {
+			n.log("Importing jumpStart." + jsFileName + ".");
+			if(!document.querySelector("[src$='/" + jsFileName + "']")) {
+				addScript(J.value('rootPath') + '/' + jsFileName, true);
+			} else {
+				n.log("Internal File." + jsFileName + " has already been imported.","warning");
+			}
+		} else {
+			n.log("Importing external." + jsFileName + ".");
+			if(!document.querySelector("[src='" + jsFileName + "']")) {
+				addScript(jsFileName, true);
 			} else {
 				n.log("External File." + jsFileName + " has already been imported.","warning");
 			}
