@@ -1,8 +1,9 @@
 (function (nameSpace) {
     "use strict";
 	var n = nameSpace || {},
-        j = [],
-		vars = {};
+			j = [],
+			k = {},
+			vars = {};
 
 	vars.rootPath = function () {
 		if (!!document.currentScript && !!document.currentScript.src) {
@@ -46,18 +47,23 @@
 			this.prototype.parent = o.prototype;
 			return this;
 		};
+		try {
+			Object.defineProperty(a, "name", { value: thisClassName });
+		} catch (e) {
+			J.log("warn", 'Cannot define name on Class');
+		}
 		return a;
 	};
 
 	n.Main = function () {};
 
-    n.jumpStart = function (f) {
-        if (!!f && typeof f === "function") {
-            j.push(f);
-        } else {
+	n.jumpStart = function (f) {
+		if (!!f && typeof f === "function") {
+			j.push(f);
+		} else {
 			throw('Invalid Javascript object, cannot invoke module');
 		}
-    };
+	};
 
 	n.value = function (varName) {
 		if (typeof vars[varName] !== 'undefined') {
@@ -65,7 +71,6 @@
 		}
 		return null;
 	};
-
 
 	function addScript (path, _async) {
 		var script = document.createElement('script');
@@ -113,6 +118,12 @@
 		return;
 	};
 
+	n.export = function(moduleName, moduleObject){
+		if (!!moduleObject && (typeof moduleObject === "function" || typeof moduleObject === "object") ) {
+			k[moduleName] = moduleObject;
+		}
+	};
+
 	n.log = function(obj, severity){
 		var severe = severity || 'info';
 
@@ -130,13 +141,17 @@
 		}
 	};
 
-    function s(e) {
+	function s(e) {
 		var i = 0, l = j.length;
 
 		for (i; i < l; i += 1) {
-			j[i] = new j[i](n);
-        }
-		n.Main(n);
+			if (!!j[i].name){
+				k[j[i].name] = new j[i](n);
+			} else {
+				new j[i](n);
+			}
+		}
+		n.Main(n,k);
 	}
 
 	if (!!window.addEventListener) {
