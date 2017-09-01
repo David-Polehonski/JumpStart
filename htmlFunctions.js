@@ -52,6 +52,19 @@
 		return null;
 	};
 
+	var getScrollX  = function (n) {
+		var supportPageOffset = window.pageXOffset !== undefined;
+		var isCSS1Compat = ((document.compatMode || "") === "CSS1Compat");
+
+		return supportPageOffset ? window.pageXOffset : isCSS1Compat ? document.documentElement.scrollLeft : document.body.scrollLeft;
+		var y = supportPageOffset ? window.pageYOffset : isCSS1Compat ? document.documentElement.scrollTop : document.body.scrollTop;
+	};
+	var getScrollY  = function (n) {
+		var supportPageOffset = window.pageXOffset !== undefined;
+		var isCSS1Compat = ((document.compatMode || "") === "CSS1Compat");
+
+		return supportPageOffset ? window.pageYOffset : isCSS1Compat ? document.documentElement.scrollTop : document.body.scrollTop;
+	};
 
 	var JHTMLNode = new J.Class('JHTML Node').extend(JHTML);
 	JHTMLNode.prototype.init = function (htmlNode) {
@@ -68,4 +81,8 @@
 	J.html = function (htmlNode) {
 		return new JHTML(htmlNode);
 	};
+	
+	J.html.getScrollX = getScrollX;
+	J.html.getScrollY = getScrollY;
+
 })(window.J || {});
