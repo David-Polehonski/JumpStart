@@ -82,7 +82,7 @@
 
 			var newStyleSheet = document.createElement('link');
 			newStyleSheet.rel = "stylesheet";
-			newStyleSheet.href = J.value('rootPath') + "ui-css/dialog.css";
+			newStyleSheet.href = J.value('rootPath') + "/ui-css/dialog.css";
 
 			_css = (document.head || document.getElementsByTagName('head')[0]).insertBefore(newStyleSheet, document.getElementsByTagName('link')[0]);
 
@@ -144,9 +144,16 @@
 		},
 		'createNewDialog': function (inst) {
 			var newDialog = null,
-				closeButton = null;
+				closeButton = null,
+				contentNode = null;
 
-			inst.setContent(inst.config.contentNode);
+			if (inst.config.preserveContent) {
+				contentNode = inst.config.contentNode.cloneNode(true);
+			} else {
+				contentNode = inst.config.contentNode;
+			}
+
+			inst.setContent(contentNode);
 
 			if (inst.config.animationStyle !== null) {
 				if (inst.config.animationLength === null) {
@@ -409,6 +416,7 @@
 
 			//	Insert new node.
 			this.content.appendChild(newContentNode);
+
 			if(oldContent !== null) {
 				this.container.container.replaceChild(this.content, oldContent);
 			} else {
