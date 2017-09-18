@@ -280,3 +280,9 @@ if (!Array.prototype.forEach) {
     // 8. return undefined
   };
 }
+
+if (!Date.now) {
+	Date.now = function now () {
+		return new Date().getTime();
+	}
+}
