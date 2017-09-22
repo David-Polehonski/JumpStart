@@ -146,9 +146,9 @@
 
 		for (i; i < l; i += 1) {
 			if (!!j[i].name){
-				k[j[i].name] = new j[i](n);
+				k[j[i].name] = new j[i](n,k);
 			} else {
-				new j[i](n);
+				new j[i](n,k);
 			}
 		}
 		n.Main(n,k);
