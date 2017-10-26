@@ -1,5 +1,5 @@
 (function (nameSpace) {
-    "use strict";
+	"use strict";
 	var n = nameSpace || {},
 			j = [],
 			k = {},
@@ -26,15 +26,16 @@
 		// Create a variable
 		var a;
 		var thisClassName = className || 'jClass undefined';
-		(a = function () {
+		a = function jClass () {
 			if (arguments.length > 0) {
 				return this.init.apply(this, arguments) || this;
 			} else {
 				return this.init() || this;
 			}
-		}).prototype = {
+		};
+		a.prototype = {
 			'init': function () {},
-			'toString': function () {return thisClassName; }
+			'toString': function () { return this.name; }
 		};
 		//Create empty constructor.
 		a.extend = function (o) {
@@ -65,12 +66,19 @@
 		}
 	};
 
-	n.value = function (varName) {
+	n.set = function (varName, varValue) {
+		vars[varName] = varValue;
+	};
+	n.get = function (varName) {
 		if (typeof vars[varName] !== 'undefined') {
 			return vars[varName];
 		}
 		return null;
 	};
+
+	//	Note to self: REQUIRE = async false, execute the scripts in the order you request them ASAP but not before parsing completes.
+	//	Note to self: INCLUDE = async true, execute the scripts as and when they arrive don't worry about order.
+	//	Node to self: Calling either REQUIRE or INCLUDE after DOMContentLoaded event have identical results.
 
 	function addScript (path, _async) {
 		var script = document.createElement('script');
@@ -84,7 +92,7 @@
 		if (jsFileName.indexOf('/') === -1) {
 			n.log("Importing jumpStart." + jsFileName + ".");
 			if(!document.querySelector("[src$='/" + jsFileName + "']")) {
-				addScript(J.value('rootPath') + '/' + jsFileName);
+				addScript(J.get('rootPath') + '/' + jsFileName);
 			} else {
 				n.log("Internal File." + jsFileName + " has already been imported.","warning");
 			}
@@ -103,7 +111,7 @@
 		if (jsFileName.indexOf('/') === -1) {
 			n.log("Importing jumpStart." + jsFileName + ".");
 			if(!document.querySelector("[src$='/" + jsFileName + "']")) {
-				addScript(J.value('rootPath') + '/' + jsFileName, true);
+				addScript(J.get('rootPath') + '/' + jsFileName, true);
 			} else {
 				n.log("Internal File." + jsFileName + " has already been imported.","warning");
 			}
@@ -121,6 +129,14 @@
 	n.export = function(moduleName, moduleObject){
 		if (!!moduleObject && (typeof moduleObject === "function" || typeof moduleObject === "object") ) {
 			k[moduleName] = moduleObject;
+		} else {
+			this.log('Cannot export ' + moduleName + ' as it is not a valid function or object');
+		}
+	};
+
+	n.import = function(moduleName){
+		if (!!moduleName && !!k[moduleName] ) {
+			return k[moduleName];
 		}
 	};
 

@@ -1,11 +1,14 @@
+/*@jStyles.js
+	Adds and API to the J namespace for adding / modifying CSS Rules and Stylesheets
+*/
 (function(J){
+	var Styles = J.Class( 'Styles' );
 
-	function styles (J) {
-		J.styles = this.createNewStyleElement();
-		return this;
+	Styles.prototype.init = function (J) {
+		return this.createNewStyleElement();
 	}
 
-	styles.prototype.xBrowserGetStyles = function(styleBlock){
+	Styles.prototype.getStyles = function(styleBlock) {
 		var styleRules;
 		if(!!styleBlock.sheet){
 			styleRules = styleBlock.sheet;
@@ -40,17 +43,18 @@
 		return styleRules;
 	};
 
-	styles.prototype.createNewStyleElement = function(){
+	Styles.prototype.createNewStyleElement = function(){
 		var head = document.head || document.getElementsByTagName('head')[0];
 		styleBlock = document.createElement('style');
 		styleBlock = head.appendChild(styleBlock);
 
-		return this.xBrowserGetStyles(styleBlock);
+		return this.getStyles(styleBlock);
 	};
 
-	styles.prototype.getElementStyleSheet = function(styleBlock){
-		return this.xBrowserGetStyles(styleBlock);
+	Styles.prototype.getElementStyleSheet = function(styleBlock){
+		return this.getStyles(styleBlock);
 	};
 
-	J.jumpStart(styles);
+	J.export('Styles', Styles);
+		
 })(window.J);

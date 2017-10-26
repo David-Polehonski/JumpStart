@@ -5,16 +5,15 @@
     'use strict';
 	//	Private module variables.
 	var	DialogContainer = new J.Class(),
-	    _containerInstance,
+		_containerInstance,
 		_css;
 
 	// PRIVATE STATIC
-    function isFlex () {
-        var test = document.createElement('div');
-        try {test.style.display = "flex";} catch(e) { return false; }
-
-        return test.style.display === "flex";
-    }
+	function isFlex () {
+		var test = document.createElement('div');
+		try {test.style.display = "flex";} catch(e) { return false; }
+		return test.style.display === "flex";
+	}
 
 	function isElement (e) {
 		return typeof HTMLElement === "object" ?
@@ -29,17 +28,17 @@
 		return _containerInstance;
 	}
 
-    // function for stopping background scroll on mobile devices, called at line 211 and 221.
-    function stopScroll(evt) {
+	// function for stopping background scroll on mobile devices, called at line 211 and 221.
+	function stopScroll(evt) {
 		evt.preventDefault();
-    }
+	}
 
 	//	Private Singleton Object.
 	DialogContainer.prototype = {
 		'dialogues': [],
 		'init': function () {
 			this.container = document.createElement('div');
-	        this.container.className = "dialog-container";
+			this.container.className = "dialog-container";
 
 			this.container = document.body.appendChild(this.container);
 
@@ -79,18 +78,19 @@
 			}
 		},
 		'loadCss': function () {
-
+			var Styles = J.import('Styles');
 			var newStyleSheet = document.createElement('link');
 			newStyleSheet.rel = "stylesheet";
-			newStyleSheet.href = J.value('rootPath') + "/ui-css/dialog.css";
+			newStyleSheet.href = J.get('rootPath') + "/ui-css/dialog.css";
 
 			_css = (document.head || document.getElementsByTagName('head')[0]).insertBefore(newStyleSheet, document.getElementsByTagName('link')[0]);
+			var styleBlock = new Styles();
 
-			J.styles.addRules("html.dialog-lock", ["height: 100%", "width: 100%", "overflow-y: scroll;"]);
+			styleBlock.addRules("html.dialog-lock", ["height: 100%", "width: 100%", "overflow-y: scroll;"]);
 
-			J.styles.addRules(".dialog-container", ["display: none"]);
+			styleBlock.addRules(".dialog-container", ["display: none"]);
 
-			J.styles.addRules(".dialog-container.open", [
+			styleBlock.addRules(".dialog-container.open", [
 				"position: fixed",
 				"display: block",
 				"top: 0",
@@ -101,7 +101,7 @@
 			]);
 
 			if (isFlex()) {
-				J.styles.addRules(".dialog-container.open", [
+				styleBlock.addRules(".dialog-container.open", [
 					"display: -webkit-box;",
 					"display: -moz-box;",
 					"display: -ms-flexbox;",
@@ -115,19 +115,19 @@
 					"align-items: center;"
 				]);
 
-				J.styles.addRules(".dialog-window", [
+				styleBlock.addRules(".dialog-window", [
 					""
 				]);
 
-				J.styles.addRules(".dialog-window.inactive", [
+				styleBlock.addRules(".dialog-window.inactive", [
 					"display: none;"
 				]);
 			} else {
-				J.styles.addRules(".dialog-container.open", [
+				styleBlock.addRules(".dialog-container.open", [
 					"text-align: center;"
 				]);
 
-				J.styles.addRules(".dialog-window", [
+				styleBlock.addRules(".dialog-window", [
 					"display: inline-block;",
 					"min-width: 40%;",
 					"margin: 1em;",
@@ -135,7 +135,7 @@
 					"top: 25%;"
 				]);
 
-				J.styles.addRules(".dialog-window.inactive", [
+				styleBlock.addRules(".dialog-window.inactive", [
 					"display: none;"
 				]);
 			}
@@ -147,13 +147,17 @@
 				closeButton = null,
 				contentNode = null;
 
-			if (inst.config.preserveContent) {
-				contentNode = inst.config.contentNode.cloneNode(true);
-			} else {
-				contentNode = inst.config.contentNode;
-			}
+			if (!!inst.config.contentNode) {
+				if (inst.config.preserveContent) {
+					contentNode = inst.config.contentNode.cloneNode(true);
+				} else {
+					contentNode = inst.config.contentNode;
+				}
 
-			inst.setContent(contentNode);
+				inst.setContent(contentNode);
+			} else {
+				inst.setContent( document.createElement('div') );
+			}
 
 			if (inst.config.animationStyle !== null) {
 				if (inst.config.animationLength === null) {
@@ -281,9 +285,11 @@
 		}
 	};
 
-    if (!J.Dialog) { // Test for existance of the dialog object.
+	if (!J.Dialog) { // Test for existance of the dialog object.
+		J.require( 'objectFunctions.js' );
+		J.require( 'jStyles.js' );
 
-        J.Dialog = new J.Class();
+		J.Dialog = new J.Class( 'Dialog' );
 
 		J.Dialog.OPEN = 0;
 		J.Dialog.CLOSED = 1;
@@ -324,13 +330,13 @@
 
 		J.Dialog.prototype.init = function (configObj) {
 			configObj = configObj || {};
-            this.container = getContainer();
+			this.container = getContainer();
 
 			this.config = J.object(configObj).mergeWith(this.defaultConfig);
 			this.content = this.container.createNewDialog(this);
 
 			return this;
-        };
+		};
 
 		J.Dialog.prototype.animate = function (next) {
 			if (this.content.className.indexOf('animate') === -1) {
