@@ -1,149 +1,291 @@
 /*@Jrender.js
-    Description: Jumpstart Module, template renderer engine.
+		Description: Jumpstart Module, template renderer engine.
 */
 J.require('objectFunctions.js');
 J.require('polyfilFunctions.js');
 (function (J) {
-    //"use strict";
+	"use strict";
 
-    var BIND = 'data-j-bind',
-        ATTRIBUTE = 'data-j-attribute',
-        TARGET = 'data-j-target',
-        JTemplateException = new J.Class();
-    // J.render accepts a template element, root node definition and a dataObject to use as a data context.
-    function capitalizeFirstLetter(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
-    }
+	var CONTENT = 'data-bind-content'; // Bool: do we want to bind the content of this element to the model?
+	var EXPRESSION = 'data-bind-expression'; // String: Expression string used to interpolate values into the content
+	var TEMPLATE = 'data-bind-template'; // Selector: Unique Selector to an HTML template to use as a sub template for output.
+	var ATTRIBUTES = 'data-bind-attributes'; // JSON: An object of key=values where the key is that attribute name, and the value is a property of the model
 
-    JTemplateException.prototype = {
-        "init": function (message, detail) {
-            this.detail = {};
-            this.message = '';
+	var JTemplateException = J.Class('JTemplateException');
 
-            if (!!message) {
-                this.setMessage(message);
-            }
-            if (!!detail) {
-                this.setDetail(detail);
-            }
+	JTemplateException.prototype = {
+		"init": function (message, detail) {
+			this.detail = {};
+			this.message = '';
 
-            return this;
-        },
-        "setMessage": function (newMsg) {
-            this.message = newMsg;
-        },
-        "setDetail": function (detailObj) {
-            var detail = {
-                'origin': 'J.Template'
-            },  keyName;
+			if (!!message) {
+				this.setMessage(message);
+			}
+			if (!!detail) {
+				this.setDetail(detail);
+			}
 
-            for (keyName in detailObj) {
-                if (detailObj.hasOwnProperty(keyName) && !detail.hasOwnProperty(keyName)) {
-                    detail[keyName] = detailObj[keyName];
-                }
-            }
-            this.detail = detail;
-        },
-        "throwException": function () {
-            window.console.log(this.detail);
-            throw "J.Template Exception: " + this.message;
-        }
-    };
+			return this;
+		},
+		"setMessage": function (newMsg) {
+			this.message = newMsg;
+		},
+		"setDetail": function (detailObj) {
+			var detail = {
+				'origin': 'J.Template'
+			},  keyName;
 
-	var JTemplateField = new J.Class();
-	JTemplateField.prototype.formula = null;
-
-	JTemplateField.prototype.init = function (fieldName, fieldValue, template, formula){
-		this.template = template;
-
-		this.fieldName = fieldName;
-		this.fieldValue = fieldValue;
-
-		this.formula = formula;
-		return this;
-	};
-
-	JTemplateField.prototype.set = function (newValue){
-		if (this.formula !== null){
-			newValue = this.template.evaluate;
+			for (keyName in detailObj) {
+				if (detailObj.hasOwnProperty(keyName) && !detail.hasOwnProperty(keyName)) {
+					detail[keyName] = detailObj[keyName];
+				}
+			}
+			this.detail = detail;
+		},
+		"throwException": function () {
+			window.console.log(this.detail);
+			throw "J.Template Exception: " + this.message;
 		}
 	};
 
-	JTemplateField.prototype.get = function (){
+	var JTemplateAttribute = J.Class("JTemplateAttribute");
 
+	function defineAccessors (object, property, definitions) {
+		var properties = property.split('.');
+		var property = properties.shift();
+
+		if (typeof object[property] === 'object' ) {
+			defineAccessors(object[property], properties.join('.'), definitions);
+		} else if (object.hasOwnProperty(property)) {
+
+			var _value = evaluate(property, object);
+			var currentDescriptor = Object.getOwnPropertyDescriptor(object, property);
+
+			if (typeof currentDescriptor.set === 'function' && typeof definitions.set === 'function') {
+				var defSetter = definitions.set.bind(object);
+				var setter = currentDescriptor.set.bind(object);
+				definitions.set = function (newValue) {
+					return defSetter(setter(newValue));
+				};
+			} else {
+				var defSetter = definitions.set.bind(object);
+				definitions.set = function (newValue) {
+					return defSetter(_value = newValue);
+				};
+			}
+
+			if (typeof currentDescriptor.get === 'function' && typeof definitions.get === 'function') {
+				var defGetter = definitions.get.bind(object);
+				var getter = currentDescriptor.get.bind(object);
+				definitions.get = function () {
+					return defGetter(getter());
+				};
+			} else {
+				var defGetter = definitions.get.bind(object);
+				definitions.get = function () {
+					return defGetter(_value);
+				};
+			}
+			//	Now update the property definition.
+			Object.defineProperty(object, property, definitions);
+		} else {
+			//	If the property doesn't exist
+			_value = null;
+			Object.defineProperty(object, property, {
+				set: function(newValue) { _value = newValue; },
+				get: function() { return _value; }
+			});
+		}
+	}
+
+	function evaluate (param, context) {
+		// Test a parameter string and evaluate if it exists in the data context.
+		var current;
+		param = param.split(".");
+		current = param.shift();
+
+		if (context.hasOwnProperty(current)) {
+			switch (typeof context[current]) {
+				case "function":
+						return context[current]();
+				case "object":
+						return !!context[current] ? evaluate(param.join('.'), context[current]) : "";
+				default:
+					return context[current];
+
+			}
+		}
+	}
+
+	function update (param, value, context) {
+		var current;
+		param = param.split(".");
+		current = param.shift();
+
+		if (context.hasOwnProperty(current)) {
+			switch (typeof context[current]) {
+			case "function":
+					context[current]( value );
+			case "object":
+					return !!context[current] ? update(param.join('.'), value, context[current]) : "";
+			default:
+				if (typeof context[current] !== "undefined") {
+					context[current] = value;
+				}
+			}
+		}
+	}
+
+	var interpolationExpression =/(?:\{!)([\d\w\.]+)(?:(?:\:)((?:0(?=\.)|[1-9])[0-9]*(?:\.[\d]+)|0|null|true|false|(\'|\")(.*)(\3)))?(?:\})/ig;
+	function evaluateExpression (expression, model) {
+		//	Capture Groups:
+		//	0:	The entire match.
+		//	1:	Parameter name.
+		//	2:	Default value if exists, including ':'
+		//	3:	Default value if exists.
+		//	4:	The delimter of a string.
+		//	{!variable.sequence}
+		var str = expression;
+		var re = new RegExp(interpolationExpression);
+		var matches;
+		var fx = function(match, p1, p2, p3, p4, p5) {
+			var value = evaluate(p1, model); //	If the value is found, use it.
+			return value || p4 || '';
+		};
+
+		while ((matches = re.exec(expression)) !== null) {
+			str = str.replace(interpolationExpression, fx);
+		}
+		return str;
 	};
 
+	JTemplateAttribute.resolve = function (model, element, expression) {
+		//	Is the expression a simple value, of an interpolation expression.
+		var re = new RegExp(interpolationExpression);
+		if (re.test(expression)) {
+			return evaluateExpression(expression, model);
+		} else {
+			return evaluate(expression, model);
+		}
+	};
 
-    J.render = function (templateNode, newModel, rootElement) {
-        // Only Accepts HTML5 Templates.
-        var i = 0,
-		    template,
-            dataElements,
-            boundElements,
-            dataAttributes,
-			model = (typeof newModel === "undefined") ? {} : J.object(newModel).clone(); // Create a blank data context
+	JTemplateAttribute.prototype.init = function (model, element, attributeName, propertyName){
+		var newAttribute = document.createAttribute(attributeName);
+		newAttribute.value = evaluate(propertyName, model);
+		element.setAttributeNode(newAttribute);
 
-        function bindData(elem) {
-            var newNode, set;
+		var re = new RegExp(interpolationExpression);
+		if (re.test(propertyName)) {
 
-            // If the element contains a data-bind attribute then insert data from the object dataObject.
-            if (elem.hasAttribute(TARGET)) {
-                set = template.addBoundParameter(elem.getAttribute(BIND), elem);
-                set(template.evaluate(elem.getAttribute(BIND)));
-                return true;
-            }
+			//	The property is an expression, one way binding allowed
+			var properties = [];
+			var expressionRe = new RegExp(interpolationExpression);
+			var expression = propertyName;
+			var matches;
 
-            if (!!elem.getAttribute(BIND)) {
-                switch (elem.nodeName) {
-                case "INPUT":
-                case "SELECT":
-                    set = template.addBoundParameter(elem.getAttribute(BIND), elem);
-                    if (!template.evaluate(elem.getAttribute(BIND))) {
-                        set(elem.value);
-                    } else {
-                        set(template.evaluate(elem.getAttribute(BIND)));
-                    }
-                    break;
-                default:
-                    newNodeValue = template.evaluate(elem.getAttribute(BIND));
+			while((matches = expressionRe.exec(expression)) !== null) {
+				properties.push(matches[1]);
+			}
 
-                    if (newNodeValue === false && elem.textContent !== "") {
-                        newNodeValue = elem.textContent;
-                        elem.textContent = "";
-                    } else if(newNodeValue === false ){
-						newNodeValue = "";
+			properties.forEach(function (property) {
+				//	Defined the accessors for any properties used here:
+				defineAccessors(model, property, {
+					get: function (value) {
+						return value;
+					},
+					set: function (newValue) {
+						newAttribute.value = JTemplateAttribute.resolve(model, element, expression);
+						return newValue;
 					}
+				} );
+			});
 
-                    newNode = document.createTextNode(newNodeValue);
-                    template.addBoundParameter(elem.getAttribute(BIND), elem.appendChild(newNode));
-					break;
-                }
+			newAttribute.value = JTemplateAttribute.resolve(model, element, expression);
 
-                return true;
-            }
-            return false;
-        }
+		} else {
+			// Simple/ Direct mapping allows two way binding or attributes
+			defineAccessors(model, propertyName, {
+				get: function (value) {
+					return value;
+				},
+				set: function (newValue) {
+					newAttribute.value = newValue;
+					return newValue;
+				}
+			} );
 
-        function writeAttribute(elem, attr) {
-            var newAttrObj = {};
+			var observer = new MutationObserver( function (mutations) {
+				for(var i = 0; i < mutations.length; i++) {
+					if (mutations[i].attributeName === newAttribute.name && evaluate(propertyName, model) !== newAttribute.value) {
+						update(propertyName, newAttribute.value, model);
+					}
+				}
+			} );
+			observer.observe(element, {'attributes':true});
+		}
 
-            if (!!attr) {
-                // The data attribute must exist.
-                newAttrObj.name = attr.split("=")[0];
-                newAttrObj.value = attr.split("=")[1];
-            }
 
-            if (template.requiresInterpolation(newAttrObj.value)) {
-                newAttrObj.value = template.evaluateInterpolation(newAttrObj.value);
-            }
-            // If they attribute already exists and the value wasn't interpolated.
-            if (elem.hasAttribute(newAttrObj.name) && template.requiresInterpolation(newAttrObj.value)) {
-                return;
-            } else {
-                elem.setAttribute(newAttrObj.name, newAttrObj.value);
-                return;
-            }
-        }
+		return this;
+	};
+
+	var JTemplateNode = J.Class("JTemplateNode");
+	JTemplateNode.prototype.init = function (model, element, expression) {
+		// this.model = model;
+		// this.element = element;
+		// this.expression = expression;
+
+		var re = new RegExp(interpolationExpression);
+		var properties = [];
+		var matches;
+
+		while((matches = re.exec(expression)) !== null) {
+			properties.push(matches[1]);
+		}
+
+		properties.forEach(function (property) {
+			//	Defined the accessors for any properties used here:
+			var _ = evaluate(property, model);
+			defineAccessors(model, property, {
+				get: function (value) {
+					return value;
+				},
+				set: function (newValue) {
+					element.textContent = JTemplateNode.resolve(model, element, expression);
+					return newValue;
+				}
+			} );
+		});
+
+		element.textContent = JTemplateNode.resolve(model, element, expression);
+
+		var observer = new MutationObserver( function (mutations) {
+			var re;
+			for(var i = 0; i < mutations.length; i++) {
+				re = new RegExp(interpolationExpression);
+				if (!interpolationExpression.test(expression) && evaluate(propertyName, model) !== element.textContent) {
+					update(propertyName, element.textContent, model);
+				}
+			}
+		} );
+		observer.observe(element, {'childList':true, 'characterData':true});
+		return this;
+	};
+
+	JTemplateNode.resolve = function (model, element, expression) {
+		//	Is the expression a simple value, of an interpolation expression.
+		var re = new RegExp(interpolationExpression);
+		if (re.test(expression)) {
+			return evaluateExpression(expression, model);
+		} else {
+			return evaluate(expression, model);
+		}
+	}
+
+	J.render = function (templateNode, newModel) {
+		// Only Accepts HTML5 Templates.
+		var i = 0;
+		var	template;
+		var model = (typeof newModel === "undefined") ? {} : newModel // Create a blank data context
 
 		if (!templateNode.content) {
 			//	Not a valid HTML5 template browser.
@@ -152,352 +294,237 @@ J.require('polyfilFunctions.js');
 				frag.appendChild(templateNode.children[c].cloneNode(true));
 			}
 			templateNode = frag;
-        } else if (!templateNode.content.querySelector(rootElement)) {
-            throw ("J.Render: Template doesn't contain specified rootElement " + rootElement);
-        } else {
-            // It's an HTML5 Template, import it's specified root node.
-            templateNode = document.importNode(templateNode.content, true);
+		} else {
+			// It's an HTML5 Template, import it's specified root node.
+			templateNode = document.importNode(templateNode.content, true);
 		}
 
-        template = new J.Template(templateNode, model);
+		//	Create the Template Object
+		template = new J.Template(templateNode, model);
 
-        dataElements = template.getTemplateElement().querySelectorAll("[" + BIND + "]");
+		return template;
+	};
 
-        for (i; i < dataElements.length; i += 1) {
-            bindData(dataElements[i]);
-        }
+	J.Template = J.Class("Template");
 
-        dataAttributes = template.getTemplateElement().querySelectorAll("[" + ATTRIBUTE + "]");
-        for (i = 0; i < dataAttributes.length; i += 1) {
+	J.Template.prototype.init = function (templateElement, dataModel) {
+		this.nodes = [];
 
-			var attributes = dataAttributes[i].getAttribute(ATTRIBUTE).split('&'); // all attributes in an element.
-			for(var j =0; j < attributes.length; j += 1) {
-				writeAttribute(dataAttributes[i], attributes[j]);
+		var _TemplateElement = templateElement || document.createElement('template');
+		var _Model = dataModel || {};
+
+		var fields = [];
+
+		Object.defineProperty( this, 'element', {
+			get: function () {
+				return _TemplateElement;
+			},
+			set: function (newTemplate) {
+				_TemplateElement = newTemplate
 			}
-			dataAttributes[i].removeAttribute(ATTRIBUTE);
-        }
+		});
 
-        return template;
-    };
+		Object.defineProperty( this, 'model', {
+			get: function () {
+				return _Model;
+			},
+			set: function (newDataModel) {
+				_Model = newDataModel;
+				this.activate();
+			}
+		});
 
-    J.Template = new J.Class();
-
-    J.Template.prototype.init = function (templateElement, dataModel) {
-        this.nodes = {};
-        this.observers = [];
-
-		var thisTemplateElement = templateElement || document.createElement('template');
-		var thisModel = dataModel || {};
-
-
-		this.getTemplateElement = function () {
-			return thisTemplateElement;
-		}.bind(this);
-		this.setTemplateElement = function (newTemplateElement) {
-			thisTemplateElement = newTemplateElement;
-		}.bind(this);
-
-		this.getDataModel = function () {
-			return thisModel;
-		}.bind(this);
-		this.setDataModel = function (newDataModel) {
-			thisModel = newDataModel;
-			for (var name in this.nodes) {
-                if (this.nodes.hasOwnProperty(name)) {
-                    this['set' + capitalizeFirstLetter(name)](this.evaluate(name));
-                }
-            }
-		}.bind(this);
+		this.activate();
 
 		return this;
-    };
+	};
 
-    J.Template.prototype.getter = function (name) {
-        var i = 0;
-        for (i; i < this.nodes[name].length; i += 1) {
-            switch (this.nodes[name][i].nodeName) {
-            case '#text':
-                return this.getTextNode(this.nodes[name][i]);
-            case "INPUT":
-                return this.getInputNode(this.nodes[name][i]);
-            case "SELECT": // These getters and setters are for bound values, not attributes or options.
-                return this.getSelectNode(this.nodes[name][i]);
-            }
-        }
-    };
+	J.Template.prototype.activate = function () {
+		var expressions = this.element.querySelectorAll('[' + CONTENT + '],[' + ATTRIBUTES + ']');
+		[].forEach.call(expressions, function ( htmlElement ){
+			if (htmlElement.hasAttribute(CONTENT)) {
+				//	Bind element content
+				if(htmlElement.getAttribute(CONTENT) === "true") {
+					if (htmlElement.hasAttribute(EXPRESSION)) {
+						//	If an expression is defined, use it instead of the content.
+						var expression = htmlElement.getAttribute(EXPRESSION);
+					} else if (htmlElement.hasAttribute(TEMPLATE)){
+						//	No implementation yet
+					} else {
+						//	Bind expressions can be implicitly set in some basic use cases.
+						/* e.g.
+							<div data-bind-content='true'>model.value</div>
+							<div data-bind-content='true'>This may be a {!model.value} expession with !{model.values} interpolated</div>
+							<input name='test' data-bind-content='true' value='model.value' />
+							<input name='test' data-bind-content='true' value='format of {!model.value}' />
+						*/
+						switch (htmlElement.nodeName) {
+							case 'INPUT':
+								var expression = htmlElement.value; // Check the value param for an expression
+								htmlElement.value = ''; // nuke it to remove the expression from output.
+								break;
+							case 'SELECT':
+								throw( new JTemplateException('Invalid bind configuration, Implicit bind expression cannot be used for select elements') );
+								break;
+							default:
+								if (htmlElement.children.length !== 0) {
+									throw( new JTemplateException('Invalid bind configuration, cannot bind an expression to an element with children') );
+								} else if (/^\s+$/g.test(htmlElement.textContent)) {
+									throw( new JTemplateException('Invalid bind configuration, the element is empty enter and expression or use the data-bind-expression attribute') );
+								} else {
+									var expression = htmlElement.textContent;
+								}
+								break;
+						}
+					}
+					this.nodes.push(new JTemplateNode(this.model, htmlElement, expression));
+				}
+			}
 
-    J.Template.prototype.setter = function (name, newValue) {
-        var i = 0;
-        // Loop all bound nodes and update the bound elements.
-        for (i; i < this.nodes[name].length; i += 1) {
-            if (!!this.nodes[name][i].hasAttribute && this.nodes[name][i].hasAttribute(TARGET)) {
-                // Redirect binding to elements attribute instead.
-                if (this.nodes[name][i].hasAttribute(this.nodes[name][i].getAttribute(TARGET))) {
-                    this.setAttributeValue(this.nodes[name][i], this.nodes[name][i].getAttribute(TARGET), newValue);
-                } else {
-                    throw ("Missing bound attribute in TARGET directive. " + this.nodes[name][i].getAttribute(TARGET));
-                }
-            } else {
-                // Switch through default node behaviours
-                switch (this.nodes[name][i].nodeName) {
-                case '#text':
-                    this.setTextNode(this.nodes[name][i], newValue);
-                    break;
-                case "INPUT":
-                    this.setInputNode(this.nodes[name][i], newValue);
-                    break;
-                case "SELECT": // These getters and setters are for bound values, not attributes or options.
-                    this.setSelectNode(this.nodes[name][i], newValue);
-                    break;
-                }
-            }
-        }
-
-        // Update the data context last:
-        try {
-            this.updateDataContext(name, newValue);
-        } catch (e) {
-	        J.log(e, 'error');
-        }
-
-    };
-
-    /**
-		function addBoundParameter: Adds a data bound parameter with getters and setters to the template API.
-		@name: The text string name of the new bound parameter.
-		@node: A reference to an HTML node to which the data is bound.
-	*/
-    J.Template.prototype.addBoundParameter = function (name, node) {
-        // Adds methods for manipulating an injected parameter.
-		if (!this.getTemplateElement().contains(node)) {
-            var e = new JTemplateException("J.Template must contain argument node", {
-                'node': node,
-                'element': this.getTemplateElement()
-            });
-            e.throwException();
-        }
-
-		// If the named parameter is new, create it in the nodes array.
-        if (this.nodes[name] === undefined) {
-            this.nodes[name] = [node];
-
-            this["get" + capitalizeFirstLetter(name)] = function () {
-                return this.getter(name);
-            };
-            this["set" + capitalizeFirstLetter(name)] = function (newValue) {
-                return this.setter(name, newValue);
-            };
-        } else {
-			//	Push the node onto the existsing nodes array for update when set.
-            this.nodes[name].push(node);
-        }
-
-        /* Add any eventListeners */
-        switch (node.nodeName) {
-        case 'INPUT':
-		case 'TEXTAREA':
-            node.addEventListener('change', function (evt) {
-                this.setter(name, evt.currentTarget.value);
-            }.bind(this));
-            break;
-        case 'SELECT':
-			node.addEventListener('change', function (evt) {
-				var currentIndex =  evt.currentTarget.options.selectedIndex;
-				this.setter(name, evt.currentTarget.options[currentIndex]);
-			}.bind(this));
-			break;
-        default:
-            // For non-input elements, add mutation observers.
-            if (!!window.MutationObserver) {
-                this.observers.push(
-                    (function (target) {
-                        // create an observer instance
-                        var observer = new window.MutationObserver(function (mutations) {
-                                mutations.forEach(function (mutation) {
-                                    window.console.log(mutation.type);
-                                });
-                            }),
-                            config = { attributes: true, childList: true, characterData: true }; // configuration of the observer:
-
-                        // pass in the target node, as well as the observer options
-                        observer.observe(target, config);
-
-                        // later, you can stop observing
-                        return observer;
-                    }(node))
-                );
-            }
-        }
-
-
-        return this["set" + capitalizeFirstLetter(name)].bind(this);
-    };
-
-    J.Template.prototype.updateDataContext = function (name, value, context) {
-		var nameArray = name.split(".");
-        var current = nameArray.shift();
-
-        if (typeof context === "undefined") {
-            context = this.getDataModel();
-        }
-
-        switch (typeof context[current]) {
-        case "object":
-            return !!context[current] ?
-				this.updateDataContext(nameArray.join('.'), value, context[current]) : (context[current] = value);
-        default:
-            context[current] = value;
-            return true;
-        }
-    };
-
-    J.Template.prototype.evaluate = function (param, context) {
-        // Test a parameter string and evaluate if it exists in the data context.
-        var current;
-
-        if (typeof context === "undefined") {
-            context = this.getDataModel();
-        }
-
-        param = param.split(".");
-        current = param.shift();
-
-        if (context.hasOwnProperty(current)) {
-            switch (typeof context[current]) {
-            case "function":
-                return context[current]();
-            case "object":
-                return !!context[current] ? this.evaluate(param.join('.'), context[current]) : "";
-            default:
-                if (typeof context[current] !== "undefined") {
-                    return context[current];
-                } else {
-                    return false;
-                }
-            }
-        }
-    };
-
-	J.Template.prototype.interpolationExpression =/(?:\{)([\d\w\.]+)(\:((?:[1-9][\d]*(?:\.[\d]+))|0|null|true|false|(?:(\'|\")([^\4]*)\4)))?(?:\})/i;
-
-    J.Template.prototype.evaluateInterpolation = function (str) {
-		//	Capture Groups:
-		//	0:	The entire match.
-		//	1:	Parameter name.
-		//	2:	Default value if exists, including ':'
-		//	3:	Default value if exists.
-		//	4:	The delimter of a string.
-
-		var matches = this.interpolationExpression.exec(str);
-
-        var param = matches[1];
-		var value = this.evaluate(param);
-
-		str = str.replace(this.interpolationExpression, function(match, p1, p2, p3, p4) {
-			//	If the value is found, use it.
-			if (!!value) {
-				return value;
-			} else if (p3 !== ''){
-				//	If a default value is expressed in the expression, use it.
-				this.updateDataContext(p1, p3);
-				return p3;
-			} else {
-				//	Else, return a blank string.
-				return '';
+			if (htmlElement.hasAttribute(ATTRIBUTES)) {
+				//	Bind element attributes
+				var attributes = JSON.parse(htmlElement.getAttribute(ATTRIBUTES));
+				if (typeof attributes === 'object') {
+					for (var attributeName in attributes) {
+						this.nodes.push(new JTemplateAttribute(this.model, htmlElement, attributeName, attributes[attributeName]));
+					}
+				}
 			}
 		}.bind(this));
+	}
 
+	J.Template.prototype.getter = function (name) {
+		var i = 0;
+		for (i; i < this.nodes[name].length; i += 1) {
+			switch (this.nodes[name][i].nodeName) {
+			case '#text':
+				return this.getTextNode(this.nodes[name][i]);
+			case "INPUT":
+				return this.getInputNode(this.nodes[name][i]);
+			case "SELECT": // These getters and setters are for bound values, not attributes or options.
+				return this.getSelectNode(this.nodes[name][i]);
+			}
+		}
+	};
 
-        return str;
-    };
+	J.Template.prototype.setter = function (name, newValue) {
+			var i = 0;
+			// Loop all bound nodes and update the bound elements.
+			for (i; i < this.nodes[name].length; i += 1) {
+					if (!!this.nodes[name][i].hasAttribute && this.nodes[name][i].hasAttribute(TARGET)) {
+							// Redirect binding to elements attribute instead.
+							if (this.nodes[name][i].hasAttribute(this.nodes[name][i].getAttribute(TARGET))) {
+									this.setAttributeValue(this.nodes[name][i], this.nodes[name][i].getAttribute(TARGET), newValue);
+							} else {
+									throw ("Missing bound attribute in TARGET directive. " + this.nodes[name][i].getAttribute(TARGET));
+							}
+					} else {
+							// Switch through default node behaviours
+							switch (this.nodes[name][i].nodeName) {
+							case '#text':
+									this.setTextNode(this.nodes[name][i], newValue);
+									break;
+							case "INPUT":
+									this.setInputNode(this.nodes[name][i], newValue);
+									break;
+							case "SELECT": // These getters and setters are for bound values, not attributes or options.
+									this.setSelectNode(this.nodes[name][i], newValue);
+									break;
+							}
+					}
+			}
 
-    J.Template.prototype.requiresInterpolation = function (str) {
-		return !!this.interpolationExpression.test(str);
-    };
+			// Update the data context last:
+			try {
+					this.updateDataContext(name, newValue);
+			} catch (e) {
+				J.log(e, 'error');
+			}
 
-    // Default text node parameter binding functions.
-    J.Template.prototype.getTextNode = function (node) {
-        return node.nodeValue; // Return the string content of the text node containing the bound value.
-    };
+	};
 
-    J.Template.prototype.setTextNode = function (node, value) {
-        value = (typeof value === 'undefined') ? '' : value;
-        node.nodeValue = value;
-        return;
-    };
+	// Default text node parameter binding functions.
+	J.Template.prototype.getTextNode = function (node) {
+			return node.nodeValue; // Return the string content of the text node containing the bound value.
+	};
 
-    // I/O Functions for params bound to input elements.
-    J.Template.prototype.getInputNode = function (node) {
-        return node.value; // Return the string content of the text node containing the bound value.
-    };
-    J.Template.prototype.setInputNode = function (node, value) {
-        value = (typeof value === 'undefined') ? '' : value;
-        node.value = value;
-        return;
-    };
+	J.Template.prototype.setTextNode = function (node, value) {
+			value = (typeof value === 'undefined') ? '' : value;
+			node.nodeValue = value;
+			return;
+	};
 
-    // I/O Functions for params bound to input elements.
-    J.Template.prototype.getSelectNode = function (node) {
-        return node.options[node.selectedIndex].value; // Return the string content of the options node containing the bound value.
-    };
-    J.Template.prototype.setSelectNode = function (node, value) {
-        var i = 0;
-        value = (typeof value === 'undefined') ? '' : value;
+	// I/O Functions for params bound to input elements.
+	J.Template.prototype.getInputNode = function (node) {
+			return node.value; // Return the string content of the text node containing the bound value.
+	};
+	J.Template.prototype.setInputNode = function (node, value) {
+			value = (typeof value === 'undefined') ? '' : value;
+			node.value = value;
+			return;
+	};
 
-        do {
-            if (node.options[i].value === value) {
-                node.selectedIndex = i;
-                return;
-            }
-            i += 1; // Onto the next.
-        } while (i < node.options.length);
+	// I/O Functions for params bound to input elements.
+	J.Template.prototype.getSelectNode = function (node) {
+			return node.options[node.selectedIndex].value; // Return the string content of the options node containing the bound value.
+	};
+	J.Template.prototype.setSelectNode = function (node, value) {
+			var i = 0;
+			value = (typeof value === 'undefined') ? '' : value;
 
-        return;
-    };
+			do {
+					if (node.options[i].value === value) {
+							node.selectedIndex = i;
+							return;
+					}
+					i += 1; // Onto the next.
+			} while (i < node.options.length);
 
-    J.Template.prototype.setAttributeValue = function (node, attrName, value) {
-        node.setAttribute(attrName, value);
-        return;
-    };
+			return;
+	};
 
-	var shallowCopyOfNodeReferences = [];
-	var templateInsertionPoint = [];
-    J.Template.prototype.render = function (targetElement) {
-		//	IE Needs some convincing.
-		if (!this.getTemplateElement().children){
-			this.getTemplateElement().children = (function(e){
+	J.Template.prototype.attach = function (targetElement) {
+		if (!this.element.children) {
+			//	If the element doesn't have the `children` property; define it now.
+			this.element.children = (function(e) {
 				var children = [];
-				for(var x = 0; x < e.childNodes.length; x += 1){
+				for(var x = 0; x < e.childNodes.length; x += 1) {
 					if(e.childNodes[x].nodeType === Node.ELEMENT_NODE){
 						children.push(e.childNodes[x]);
 					}
 				}
 				return children;
-			})(this.getTemplateElement());
+			})(this.element);
+		}
+		//	Grab a private reference to the children of the template, and the insertion point
+		var shallowCopyOfNodeReferences = [].slice.call(this.element.children, 0);
+		var templateInsertionPoint = targetElement;
+
+		//	Now we insert the template.
+		templateInsertionPoint.appendChild(this.element);
+		this.element = templateInsertionPoint;
+		this.attached = true;
+		this.remove = function () {
+			var fragment = document.createDocumentFragment();
+			while(shallowCopyOfNodeReferences.length > 0) {
+				fragment.appendChild(templateInsertionPoint.removeChild(shallowCopyOfNodeReferences.pop()));
+			}
+
+			this.element = fragment;
+			this.attached = !(delete this.remove);
 		}
 
-		shallowCopyOfNodeReferences = [].slice.call(this.getTemplateElement().children, 0);
-		templateInsertionPoint = targetElement;
+		return this;
+	};
 
-		templateInsertionPoint.appendChild(this.getTemplateElement());
-
-        return;
-    };
-
-    J.Template.prototype.remove = function () {
-		//	Remove Nodes.
-		var fragment = document.createDocumentFragment();
-		while(shallowCopyOfNodeReferences.length > 0) {
-			fragment.appendChild(templateInsertionPoint.removeChild(shallowCopyOfNodeReferences.pop()));
-		}
-		this.setTemplateElement(fragment);
-
-        return;
-    };
+	J.Template.prototype.remove = function () {
+		throw(new JTemplateException('Cannot remove, template is already dettached'));
+		return;
+	};
 
 	J.Template.prototype.find = function(querySelectorString){
 		if (shallowCopyOfNodeReferences.length === 0){
-			return this.getTemplateElement().querySelector(querySelectorString);
+			return this.element.querySelector(querySelectorString);
 		} else {
 			var element;
 			for(var i = 0; i < shallowCopyOfNodeReferences.length; i += 1){
@@ -512,7 +539,7 @@ J.require('polyfilFunctions.js');
 
 	J.Template.prototype.findAll = function(querySelectorString){
 		if (shallowCopyOfNodeReferences.length === 0){
-			return this.getTemplateElement().querySelectorAll(querySelectorString);
+			return this.element.querySelectorAll(querySelectorString);
 		} else {
 			for(var element in shallowCopyOfNodeReferences){
 				element = shallowCopyOfNodeReferences[element];

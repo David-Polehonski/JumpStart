@@ -49,7 +49,7 @@
 			return this;
 		};
 		try {
-			Object.defineProperty(a, "name", { value: thisClassName });
+			Object.defineProperty(a, 'name', { 'value': thisClassName });
 		} catch (e) {
 			J.log("warn", 'Cannot define name on Class');
 		}

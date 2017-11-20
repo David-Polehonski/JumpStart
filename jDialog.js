@@ -8,6 +8,8 @@
 		_containerInstance,
 		_css;
 
+	var WINDOW_LOCK_CLASS = 'dialog-lock';
+
 	// PRIVATE STATIC
 	function isFlex () {
 		var test = document.createElement('div');
@@ -147,6 +149,20 @@
 				closeButton = null,
 				contentNode = null;
 
+			if (inst.config.closeButton !== null) {
+				if (typeof inst.config.closeButton === typeof 'string') {
+					closeButton = document.createElement('div');
+					closeButton.className = "dialog-close-button";
+					closeButton.appendChild(document.createTextNode(inst.config.closeButton));
+				} else if(isElement(inst.config.closeButton)) {
+					closeButton = inst.config.closeButton.cloneNode(true);
+				}
+
+				if (closeButton !== null) {
+					closeButton = inst.closeButton = closeButton;
+				}
+			}
+
 			if (!!inst.config.contentNode) {
 				if (inst.config.preserveContent) {
 					contentNode = inst.config.contentNode.cloneNode(true);
@@ -159,6 +175,8 @@
 				inst.setContent( document.createElement('div') );
 			}
 
+			this.container.appendChild( inst.content );
+
 			if (inst.config.animationStyle !== null) {
 				if (inst.config.animationLength === null) {
 					throw('Mis-configured jDialog. animationStyle specified without animationLength.');
@@ -166,21 +184,6 @@
 				inst.content.className += ' ' + inst.config.animationStyle;
 				inst.content.className += ' ' + inst.config.animationLength;
 				inst.animated = true;
-			}
-
-			if (inst.config.closeButton !== null) {
-				if (typeof inst.config.closeButton === typeof 'string') {
-					closeButton = document.createElement('div');
-					closeButton.className = "dialog-close-button";
-					closeButton.appendChild(document.createTextNode(inst.config.closeButton));
-				} else if(isElement(inst.config.closeButton)) {
-					closeButton = inst.config.closeButton.cloneNode(true);
-				}
-
-				if (closeButton !== null) {
-					closeButton = inst.content.appendChild(closeButton);
-					closeButton.addEventListener('click', inst.hide.bind(inst), false);
-				}
 			}
 
 			inst.content.addEventListener('click', function (e) {
@@ -205,9 +208,9 @@
 		'lockScreen': function () {
 			var htmlElement = document.getElementsByTagName('html')[0],
 			 	bodyElement = document.getElementsByTagName('body')[0],
-				cssClass = "dialog-lock";
+				cssClass = WINDOW_LOCK_CLASS;
 
-			if (htmlElement.className.indexOf(cssClass) === -1) {
+			if (htmlElement.className.indexOf(WINDOW_LOCK_CLASS) === -1) {
 
 				bodyElement.setAttribute('style',"height: 100%; "+
 					"width: 100%; "+
@@ -215,20 +218,29 @@
 					"position: fixed; "+
 					"top:" + -window.pageYOffset + 'px');
 
-				htmlElement.className += (" " + cssClass);
+				htmlElement.className += (" " + WINDOW_LOCK_CLASS);
 			}
 		},
 		'unlockScreen': function () {
-			var htmlElement = document.getElementsByTagName('html')[0],
-				bodyElement = document.getElementsByTagName('body')[0],
-				cssClass = "dialog-lock";
+			var htmlElement = document.getElementsByTagName('html')[0];
+			var bodyElement = document.getElementsByTagName('body')[0];
 
-            //htmlElement.removeEventListener("touchmove", stopScroll, false);
+			var top = parseInt(bodyElement.style.top.replace(/(-|px)/, ''));
 
-			if (htmlElement.className.indexOf(cssClass) !== -1) {
-				bodyElement.setAttribute('style','');
-				htmlElement.className = htmlElement.className.replace(cssClass,'');
+			var update = function () {
+				if (htmlElement.className.indexOf(WINDOW_LOCK_CLASS) !== -1) {
+					bodyElement.setAttribute('style','');
+					htmlElement.className = htmlElement.className.replace(WINDOW_LOCK_CLASS,'');
+					window.scroll( 0, top );
+				}
+			};
+
+			if (!!window.requestAnimationFrame) {
+				window.requestAnimationFrame( update );
+			} else {
+				update();
 			}
+
 		},
 		'animate': function (next) {
 			if (this.container.className.indexOf('animate') === -1) {
@@ -329,11 +341,10 @@
 		};
 
 		J.Dialog.prototype.init = function (configObj) {
-			configObj = configObj || {};
+			this.config = J.object(configObj || {}).mergeWith(this.defaultConfig);
 			this.container = getContainer();
 
-			this.config = J.object(configObj).mergeWith(this.defaultConfig);
-			this.content = this.container.createNewDialog(this);
+			this.container.createNewDialog(this);
 
 			return this;
 		};
@@ -349,7 +360,7 @@
 			}
 		};
 
-        J.Dialog.prototype.display = function (replaceContent) {
+		J.Dialog.prototype.display = function (replaceContent) {
 			if(this.state === J.Dialog.OPEN){ return; }
 			if (!!replaceContent){
 				this.setContent(replaceContent);
@@ -371,7 +382,7 @@
 			}
 		};
 
-        J.Dialog.prototype.hide = function () {
+		J.Dialog.prototype.hide = function () {
 			var next = this.hideWindow.bind(this);
 
 			if (this.animated && this.state === J.Dialog.OPEN) {
@@ -398,7 +409,7 @@
 			}
 		};
 
-        J.Dialog.prototype.destroy = function () {
+		J.Dialog.prototype.destroy = function () {
 			if ('ie8Mode' in this.config) {
 				this.container.container.setAttribute('eventName','dialogDestroyed');
 			} else {
@@ -410,24 +421,24 @@
 			this.state = null;
 		};
 
-		J.Dialog.prototype.setContent = function(newContentNode){
-			var newContent = document.createDocumentFragment();
-			var oldContent = this.content || null;
+		J.Dialog.prototype.setContent = function(newContentNode) {
+			var oldContentContainer = document.createDocumentFragment();
 
-			//	Set the new dialog root element:
-			this.content = newContent.appendChild(document.createElement(this.config.dialogRootElement));
-
-			//	Set the className to dialog + config class root.
-			this.content.className = 'dialog-window inactive ' + this.config.dialogRootClass;
-
-			//	Insert new node.
-			this.content.appendChild(newContentNode);
-
-			if(oldContent !== null) {
-				this.container.container.replaceChild(this.content, oldContent);
-			} else {
-				this.container.container.appendChild(this.content);
+			if (!this.content) {
+				this.content = document.createElement(this.config.dialogRootElement);
+				this.content.className = 'dialog-window inactive ' + this.config.dialogRootClass;
 			}
+
+			while (this.content.children.length > 0) {
+				oldContentContainer.appendChild(this.content.children[0]); // Push old content into a fragment
+			}
+			//	Insert new node.
+			if (!!this.closeButton) {
+				var btn = this.content.appendChild(this.closeButton.cloneNode(true));
+				btn.addEventListener('click', this.hide.bind(this), false);
+			}
+
+			this.content.appendChild(newContentNode);
 		};
 
     }
