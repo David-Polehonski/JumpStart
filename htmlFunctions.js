@@ -96,12 +96,16 @@
 		return supportPageOffset ? window.pageYOffset : isCSS1Compat ? document.documentElement.scrollTop : document.body.scrollTop;
 	};
 
-	Object.defineProperty(window, 'scrollX', {
-		get: function () { return getScrollX() }
-	});
+	if (window.scrollX === undefined) {
+		Object.defineProperty(window, 'scrollX', {
+			get: function () { return getScrollX() }
+		});
+	}
 
-	Object.defineProperty(window, 'scrollY', {
-		get: function () { return getScrollY() }
-	});
+	if (!window.scrollY === undefined) {
+		Object.defineProperty(window, 'scrollY', {
+			get: function () { return getScrollY() }
+		});
+	}
 
 })(window.J || {});
