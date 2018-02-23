@@ -1,8 +1,9 @@
 /*@Jrender.js
-		Description: Jumpstart Module, template renderer engine.
+	Description: Jumpstart Module, template renderer engine.
+
+	@.require('objectFunctions.js');
+	@.require('polyfilFunctions.js');
 */
-J.require('objectFunctions.js');
-J.require('polyfilFunctions.js');
 (function (J) {
 	"use strict";
 

@@ -1,5 +1,9 @@
 /*  @jDialog.js
 	Dialog window functionality for the jumpstart framwork.
+	
+	@.require( 'polyfilFunctions.js' );
+	@.require( 'objectFunctions.js' );
+	@.require( 'jStyles.js' );
 */
 (function (J) {
 	'use strict';
@@ -8,7 +12,7 @@
 	var _containerInstance = null;
 	var _css= null;
 
-	var	DialogContainer = J.Class( "DialogContainer" );
+	var DialogContainer = J.Class( "DialogContainer" );
 
 	/*CONST*/ var WINDOW_LOCK_CLASS = 'dialog-lock';
 
@@ -326,9 +330,6 @@
 	};
 
 	if (!J.Dialog) { // Test for existance of the dialog object.
-		J.require( 'polyfilFunctions.js' );
-		J.require( 'objectFunctions.js' );
-		J.require( 'jStyles.js' );
 
 		J.Dialog = J.Class( 'Dialog' );
 
