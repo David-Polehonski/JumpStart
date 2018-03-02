@@ -3,7 +3,7 @@
 */
 (function initHTMLFunctions (J) {
 	'use strict';
-	var JHTML = new J.Class();
+	var JHTML = J.Class("JHTML");
 
 	JHTML.prototype.init = function (htmlNode) {
 		if (this.isHtml(htmlNode)){
@@ -17,7 +17,7 @@
 	JHTML.prototype.isHtml = function (n) {
 		var node = n || this.node;
 		return (node.nodeType === 1 && typeof (node.innerHTML) !== undefined);
-    };
+	};
 
 	JHTML.prototype.getDataSet = function (n) {
 		var a = 0, attribute, dataset = {}, pattern = /^data-[a-zA-Z]/i, node = n || this.node;
@@ -52,7 +52,7 @@
 		return null;
 	};
 
-	var JHTMLNode = new J.Class('JHTML Node').extend(JHTML);
+	var JHTMLNode = J.Class('JHTMLNode').extend(JHTML);
 	JHTMLNode.prototype.init = function (htmlNode) {
 		this.node = htmlNode;
 
@@ -71,7 +71,7 @@
 		return this;
 	};
 
-	var JHTMLCollection = new J.Class('JHTML Collection').extend(JHTML);
+	var JHTMLCollection = J.Class('JHTMLCollection').extend(JHTML);
 	JHTMLCollection.prototype.init = function (htmlNodeList) {
 		this.collection = htmlNodeList;
 		return this;
@@ -96,13 +96,10 @@
 		return supportPageOffset ? window.pageYOffset : isCSS1Compat ? document.documentElement.scrollTop : document.body.scrollTop;
 	};
 
-	if (window.scrollX === undefined) {
+	if (!window.hasOwnProperty('scrollX') || !window.hasOwnProperty('scrollY')) {
 		Object.defineProperty(window, 'scrollX', {
 			get: function () { return getScrollX() }
 		});
-	}
-
-	if (!window.scrollY === undefined) {
 		Object.defineProperty(window, 'scrollY', {
 			get: function () { return getScrollY() }
 		});
