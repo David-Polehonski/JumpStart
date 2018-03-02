@@ -25,7 +25,7 @@
 	n.Class = function (className) {
 		// Create a variable
 		var a;
-		var thisClassName = className || 'jClass undefined';
+		var thisClassName = className || 'jClass';
 		a = function jClass () {
 			if (arguments.length > 0) {
 				return this.init.apply(this, arguments) || this;
@@ -33,6 +33,13 @@
 				return this.init() || this;
 			}
 		};
+
+		try {
+			Object.defineProperty(a, 'name', { 'value': thisClassName });
+		} catch (e) {
+			a = new Function('return ' + a.toString().replace('jClass', thisClassName) + ';'  )();
+		}
+
 		a.prototype = {
 			'init': function () {},
 			'toString': function () { return this.name; }
@@ -48,11 +55,7 @@
 			this.prototype.parent = o.prototype;
 			return this;
 		};
-		try {
-			Object.defineProperty(a, 'name', { 'value': thisClassName });
-		} catch (e) {
-			J.log("warn", 'Cannot define name on Class');
-		}
+
 		return a;
 	};
 
@@ -130,7 +133,7 @@
 		if (!!moduleObject && (typeof moduleObject === "function" || typeof moduleObject === "object") ) {
 			k[moduleName] = moduleObject;
 		} else {
-			this.log('Cannot export ' + moduleName + ' as it is not a valid function or object');
+			n.log('Cannot export ' + moduleName + ' as it is not a valid function or object');
 		}
 	};
 
@@ -143,15 +146,12 @@
 	n.log = function(obj, severity){
 		var severe = severity || 'info';
 
-		if(!!console && !!console.log){
+		if(!!console && !!console.log) {
 			var consoleOptions = {
-				'info': console.log
+				'info': console.log,
+				'warning': !!console.warn ? console.warn : console.log,
+				'error': !!console.error ? console.error : console.log
 			};
-
-			consoleOptions.warning = !!console.warn ?
-				console.warn : consoleOptions.info;
-			consoleOptions.error = (!!console.error) ?
-				console.error : consoleOptions.warning;
 
 			consoleOptions[severe].bind(console, obj).call();
 		}

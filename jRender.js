@@ -1,8 +1,9 @@
 /*@Jrender.js
-		Description: Jumpstart Module, template renderer engine.
+	Description: Jumpstart Module, template renderer engine.
+
+	@.require('objectFunctions.js');
+	@.require('polyfilFunctions.js');
 */
-J.require('objectFunctions.js');
-J.require('polyfilFunctions.js');
 (function (J) {
 	"use strict";
 
@@ -54,7 +55,7 @@ J.require('polyfilFunctions.js');
 		var properties = property.split('.');
 		var property = properties.shift();
 
-		if (typeof object[property] === 'object' ) {
+		if (typeof object[property] === 'object' && object[property] !== null ) {
 			defineAccessors(object[property], properties.join('.'), definitions);
 		} else if (object.hasOwnProperty(property)) {
 
@@ -93,7 +94,8 @@ J.require('polyfilFunctions.js');
 			_value = null;
 			Object.defineProperty(object, property, {
 				set: function(newValue) { _value = newValue; },
-				get: function() { return _value; }
+				get: function() { return _value; },
+				configurable: true
 			});
 		}
 	}
@@ -111,10 +113,12 @@ J.require('polyfilFunctions.js');
 				case "object":
 						return !!context[current] ? evaluate(param.join('.'), context[current]) : "";
 				default:
-					return context[current];
-
+					if (typeof context[current] !== "undefined") {
+						return context[current];
+					}
 			}
 		}
+		return null;
 	}
 
 	function update (param, value, context) {
@@ -171,7 +175,9 @@ J.require('polyfilFunctions.js');
 
 	JTemplateAttribute.prototype.init = function (model, element, attributeName, propertyName){
 		var newAttribute = document.createAttribute(attributeName);
-		newAttribute.value = evaluate(propertyName, model);
+		var newAttributeValue = evaluate(propertyName, model);
+		newAttribute.value = (newAttributeValue === null)? '' : newAttributeValue;
+
 		element.setAttributeNode(newAttribute);
 
 		var re = new RegExp(interpolationExpression);
@@ -194,14 +200,13 @@ J.require('polyfilFunctions.js');
 						return value;
 					},
 					set: function (newValue) {
-						newAttribute.value = JTemplateAttribute.resolve(model, element, expression);
+						var v = JTemplateAttribute.resolve(model, element, expression);
+						newAttribute.value = (v !== null) ? v : '';
 						return newValue;
 					}
 				} );
 			});
-
 			newAttribute.value = JTemplateAttribute.resolve(model, element, expression);
-
 		} else {
 			// Simple/ Direct mapping allows two way binding or attributes
 			defineAccessors(model, propertyName, {
@@ -209,7 +214,8 @@ J.require('polyfilFunctions.js');
 					return value;
 				},
 				set: function (newValue) {
-					newAttribute.value = newValue;
+					var v = JTemplateAttribute.resolve(model, element, expression);
+					newAttribute.value = (v !== null) ? v : '';
 					return newValue;
 				}
 			} );
@@ -223,7 +229,6 @@ J.require('polyfilFunctions.js');
 			} );
 			observer.observe(element, {'attributes':true});
 		}
-
 
 		return this;
 	};
@@ -268,6 +273,7 @@ J.require('polyfilFunctions.js');
 			}
 		} );
 		observer.observe(element, {'childList':true, 'characterData':true});
+
 		return this;
 	};
 
@@ -280,6 +286,152 @@ J.require('polyfilFunctions.js');
 			return evaluate(expression, model);
 		}
 	}
+
+	var JTemplateInput = J.Class("JTemplateInput");
+	JTemplateInput.prototype.init = function (model, element, expression) {
+		// this.model = model;
+		// this.element = element;
+		// this.expression = expression;
+		if (element.nodeName !== 'INPUT') {
+			throw(new JTemplateException('Invalid Argument Exception, Element passed to JTemplateInput is a ' + element.nodeName) );
+		}
+
+		var re = new RegExp(interpolationExpression);
+		var properties = [];
+		var matches;
+
+		if (re.test( expression )) {
+			while((matches = re.exec(expression)) !== null) {
+				properties.push(matches[1]);
+			}
+
+			properties.forEach(function (property) {
+				//	Defined the accessors for any properties used here:
+				var _ = evaluate(property, model);
+				defineAccessors(model, property, {
+					get: function (value) {
+						return value;
+					},
+					set: function (newValue) {
+						var v = JTemplateInput.resolve(model, element, expression);
+						element.value = (v !== null) ? v : '';
+						return newValue;
+					}
+				} );
+			});
+		} else {
+			//	Direct / Simple value binding
+			defineAccessors(model, expression, {
+				get: function (value) {
+					return value;
+				},
+				set: function (newValue) {
+					var v = JTemplateInput.resolve(model, element, expression);
+					element.value = (v !== null) ? v : '';
+					return newValue;
+				}
+			} );
+		}
+
+		element.value = JTemplateInput.resolve(model, element, expression);
+
+		element.addEventListener('change', function (changeEvent) {
+			re = new RegExp(interpolationExpression);
+			if (!interpolationExpression.test(expression) && evaluate(expression, model) !== element.value) {
+				update(expression, element.value, model);
+			}
+		}, false);
+
+		return this;
+	};
+
+	JTemplateInput.resolve = function (model, element, expression) {
+		//	Is the expression a simple value, of an interpolation expression.
+		var re = new RegExp(interpolationExpression);
+		if (re.test(expression)) {
+			return evaluateExpression(expression, model);
+		} else {
+			return evaluate(expression, model);
+		}
+	};
+
+	var JTemplateSelect = J.Class("JTemplateSelect");
+	JTemplateSelect.prototype.init = function (model, element, expression) {
+		// this.model = model;
+		// this.element = element;
+		// this.expression = expression;
+		if (element.nodeName !== 'SELECT') {
+			throw(new JTemplateException('Invalid Argument Exception, Element passed to JTemplateInput is a ' + element.nodeName) );
+		}
+
+		var re = new RegExp(interpolationExpression);
+		var properties = [];
+		var matches;
+
+		if (re.test( expression )) {
+			while((matches = re.exec(expression)) !== null) {
+				properties.push(matches[1]);
+			}
+
+			properties.forEach(function (property) {
+				//	Defined the accessors for any properties used here:
+				var _ = evaluate(property, model);
+				defineAccessors(model, property, {
+					get: function (value) {
+						return value;
+					},
+					set: function (newValue) {
+						var resolvedValue = JTemplateSelect.resolve(model, element, expression);
+						for (var i = 0; i < element.options.length; i++) {
+							if (element.options[i].value == resolvedValue) {
+								element.selectedIndex = i;
+								break;
+							}
+						}
+						return newValue;
+					}
+				} );
+			});
+		} else {
+			//	Direct / Simple value binding
+			defineAccessors(model, expression, {
+				get: function (value) {
+					return value;
+				},
+				set: function (newValue) {
+					var resolvedValue = JTemplateSelect.resolve(model, element, expression);
+					for (var i = 0; i < element.options.length; i++) {
+						if (element.options[i].value == resolvedValue) {
+							element.selectedIndex = i;
+							break;
+						}
+					}
+					return newValue;
+				}
+			} );
+		}
+
+		element.value = JTemplateSelect.resolve(model, element, expression);
+
+		element.addEventListener('change', function (changeEvent) {
+			re = new RegExp(interpolationExpression);
+			if (!interpolationExpression.test(expression) && evaluate(expression, model) !== element.value) {
+				update(expression, element.value, model);
+			}
+		}, false);
+
+		return this;
+	};
+
+	JTemplateSelect.resolve = function (model, element, expression) {
+		//	Is the expression a simple value, of an interpolation expression.
+		var re = new RegExp(interpolationExpression);
+		if (re.test(expression)) {
+			return evaluateExpression(expression, model);
+		} else {
+			return evaluate(expression, model);
+		}
+	};
 
 	J.render = function (templateNode, newModel) {
 		// Only Accepts HTML5 Templates.
@@ -342,48 +494,55 @@ J.require('polyfilFunctions.js');
 	J.Template.prototype.activate = function () {
 		var expressions = this.element.querySelectorAll('[' + CONTENT + '],[' + ATTRIBUTES + ']');
 		[].forEach.call(expressions, function ( htmlElement ){
-			if (htmlElement.hasAttribute(CONTENT)) {
+			if (htmlElement.hasAttribute(CONTENT) && htmlElement.getAttribute(CONTENT) === "true") {
 				//	Bind element content
-				if(htmlElement.getAttribute(CONTENT) === "true") {
-					if (htmlElement.hasAttribute(EXPRESSION)) {
-						//	If an expression is defined, use it instead of the content.
-						var expression = htmlElement.getAttribute(EXPRESSION);
-					} else if (htmlElement.hasAttribute(TEMPLATE)){
-						//	No implementation yet
-					} else {
-						//	Bind expressions can be implicitly set in some basic use cases.
-						/* e.g.
-							<div data-bind-content='true'>model.value</div>
-							<div data-bind-content='true'>This may be a {!model.value} expession with !{model.values} interpolated</div>
-							<input name='test' data-bind-content='true' value='model.value' />
-							<input name='test' data-bind-content='true' value='format of {!model.value}' />
-						*/
-						switch (htmlElement.nodeName) {
-							case 'INPUT':
-								var expression = htmlElement.value; // Check the value param for an expression
-								htmlElement.value = ''; // nuke it to remove the expression from output.
-								break;
-							case 'SELECT':
-								throw( new JTemplateException('Invalid bind configuration, Implicit bind expression cannot be used for select elements') );
-								break;
-							default:
-								if (htmlElement.children.length !== 0) {
-									throw( new JTemplateException('Invalid bind configuration, cannot bind an expression to an element with children') );
-								} else if (/^\s+$/g.test(htmlElement.textContent)) {
-									throw( new JTemplateException('Invalid bind configuration, the element is empty enter and expression or use the data-bind-expression attribute') );
-								} else {
-									var expression = htmlElement.textContent;
-								}
-								break;
+				if (htmlElement.hasAttribute(EXPRESSION)) {
+					//	If an expression is defined, use it instead of the content.
+					var expression = htmlElement.getAttribute(EXPRESSION);
+				}
+				//	Bind expressions can be implicitly set in some basic use cases.
+				/* e.g.
+					<div data-bind-content='true'>model.value</div>
+					<div data-bind-content='true'>This may be a {!model.value} expession with !{model.values} interpolated</div>
+					<input name='test' data-bind-content='true' value='model.value' />
+					<input name='test' data-bind-content='true' value='format of {!model.value}' />
+				*/
+				switch (htmlElement.nodeName) {
+					case 'INPUT':
+						if (!expression){
+							var expression = htmlElement.value; // Check the value param for an expression
+							htmlElement.value = ''; // nuke it to remove the expression from output.
 						}
-					}
-					this.nodes.push(new JTemplateNode(this.model, htmlElement, expression));
+						this.nodes.push(new JTemplateInput(this.model, htmlElement, expression));
+						break;
+					case 'SELECT':
+						if (!expression) {
+							throw( new JTemplateException('Invalid bind configuration, cannot implicitly bind a select element') );
+						}
+						this.nodes.push(new JTemplateSelect(this.model, htmlElement, htmlElement.getAttribute(EXPRESSION)));
+						break;
+					default:
+						if (!expression) {
+							if (htmlElement.children.length !== 0) {
+								throw( new JTemplateException('Invalid bind configuration, cannot bind an expression to an element with children') );
+							} else if (/^\s+$/g.test(htmlElement.textContent)) {
+								throw( new JTemplateException('Invalid bind configuration, the element is empty enter and expression or use the data-bind-expression attribute') );
+							} else {
+								var expression = htmlElement.textContent;
+							}
+						}
+						this.nodes.push(new JTemplateNode(this.model, htmlElement, expression));
+						break;
 				}
 			}
 
 			if (htmlElement.hasAttribute(ATTRIBUTES)) {
 				//	Bind element attributes
-				var attributes = JSON.parse(htmlElement.getAttribute(ATTRIBUTES));
+				try {
+					var attributes = JSON.parse(htmlElement.getAttribute(ATTRIBUTES));
+				} catch (e) {
+					J.log(htmlElement.getAttribute(ATTRIBUTES));
+				}
 				if (typeof attributes === 'object') {
 					for (var attributeName in attributes) {
 						this.nodes.push(new JTemplateAttribute(this.model, htmlElement, attributeName, attributes[attributeName]));
