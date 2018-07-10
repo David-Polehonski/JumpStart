@@ -436,7 +436,7 @@
 	J.render = function (templateNode, newModel) {
 		// Only Accepts HTML5 Templates.
 		var i = 0;
-		var	template;
+		var template;
 		var model = (typeof newModel === "undefined") ? {} : newModel // Create a blank data context
 
 		if (!templateNode.content) {
