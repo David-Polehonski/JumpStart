@@ -46,11 +46,16 @@
 		};
 		//Create empty constructor.
 		a.extend = function (o) {
-			var Temporary = function () {};
-			//Assign target prototype by reference.
-			Temporary.prototype = o.prototype;
-			//Inherit prototype via the temporary constructor.
-			this.prototype = new Temporary();
+			if (!Object.create) {
+				var Temporary = function () {};
+				//Assign target prototype by reference.
+				Temporary.prototype = o.prototype;
+				//Inherit prototype via the temporary constructor.
+				this.prototype = new Temporary();
+			} else {
+				this.prototype = Object.create(o.prototype);
+			}
+			this.prototype.constructor = a;
 			//Save the parent prototype's init method.
 			this.prototype.parent = o.prototype;
 			return this;
