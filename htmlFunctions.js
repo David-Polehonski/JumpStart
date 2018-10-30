@@ -52,6 +52,21 @@
 		return null;
 	};
 
+	JHTML.prototype.getTemplateContent = function (n) {
+		let node = n || this.node;
+		if(!!node.content) {
+			return document.importNode(n.content, true);
+		} else {
+			let fragment = document.createDocumentFragment();
+			let childcount = node.childNodes.length;
+
+			for(let i = 0; i < childcount; i++) {
+				fragment.appendChild( node.childNodes[i].cloneNode(true) );
+			}
+			return fragment;
+		}
+	}
+
 	var JHTMLNode = J.Class('JHTMLNode').extend(JHTML);
 	JHTMLNode.prototype.init = function (htmlNode) {
 		this.node = htmlNode;
@@ -86,7 +101,6 @@
 		var isCSS1Compat = ((document.compatMode || "") === "CSS1Compat");
 
 		return supportPageOffset ? window.pageXOffset : isCSS1Compat ? document.documentElement.scrollLeft : document.body.scrollLeft;
-		var y = supportPageOffset ? window.pageYOffset : isCSS1Compat ? document.documentElement.scrollTop : document.body.scrollTop;
 	};
 
 	var getScrollY  = function (n) {
