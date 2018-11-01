@@ -55,7 +55,7 @@
 	JHTML.prototype.getTemplateContent = function (n) {
 		let node = n || this.node;
 		if(!!node.content) {
-			return document.importNode(n.content, true);
+			return document.importNode(node.content, true);
 		} else {
 			let fragment = document.createDocumentFragment();
 			let childcount = node.childNodes.length;
