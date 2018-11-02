@@ -93,21 +93,27 @@
 		script.src = path;
 		script.async = !!_async;
 
-		document.head.appendChild(script);
+		return document.head.appendChild(script);
 	}
 
 	n.require = function(jsFileName){
 		if (jsFileName.indexOf('/') === -1) {
 			n.log("Importing jumpStart." + jsFileName + ".");
 			if(!document.querySelector("[src$='/" + jsFileName + "']")) {
-				addScript(J.get('rootPath') + '/' + jsFileName);
+				return new Promise( function(resolve) {
+					let script = addScript(J.get('rootPath') + '/' + jsFileName);
+					script.addEventListener('load', resolve, false);
+				});
 			} else {
 				n.log("Internal File." + jsFileName + " has already been imported.","warning");
 			}
 		} else {
 			n.log("Importing external." + jsFileName + ".");
 			if(!document.querySelector("[src='" + jsFileName + "']")) {
-				addScript(jsFileName);
+				return new Promise( function(resolve) {
+					let script = addScript(jsFileName);
+					script.addEventListener('load', resolve, false);
+				});
 			} else {
 				n.log("External File." + jsFileName + " has already been imported.","warning");
 			}
@@ -119,14 +125,20 @@
 		if (jsFileName.indexOf('/') === -1) {
 			n.log("Importing jumpStart." + jsFileName + ".");
 			if(!document.querySelector("[src$='/" + jsFileName + "']")) {
-				addScript(J.get('rootPath') + '/' + jsFileName, true);
+				return new Promise( function(resolve) {
+					let script = addScript(J.get('rootPath') + '/' + jsFileName);
+					script.addEventListener('load', resolve, true);
+				});
 			} else {
 				n.log("Internal File." + jsFileName + " has already been imported.","warning");
 			}
 		} else {
 			n.log("Importing external." + jsFileName + ".");
 			if(!document.querySelector("[src='" + jsFileName + "']")) {
-				addScript(jsFileName, true);
+				return new Promise( function(resolve) {
+					let script = addScript(jsFileName, true);
+					script.addEventListener('load', resolve, true);
+				});
 			} else {
 				n.log("External File." + jsFileName + " has already been imported.","warning");
 			}
