@@ -5,11 +5,11 @@
 	'use strict';
 	var JHTML = J.Class("JHTML");
 
-	JHTML.prototype.init = function (htmlNode) {
-		if (this.isHtml(htmlNode)){
-			return new JHTMLNode(htmlNode);
-		} else if (htmlNode instanceof window.NodeList || htmlNode instanceof window.HTMLCollection) {
-			return new JHTMLCollection(htmlNode);
+	JHTML.prototype.init = function (html_nodeOrCollection) {
+		if (this.isHtml(html_nodeOrCollection)){
+			return new JHTMLNode(html_nodeOrCollection);
+		} else if (html_nodeOrCollection instanceof window.NodeList || html_nodeOrCollection instanceof window.HTMLCollection) {
+			return new JHTMLCollection(html_nodeOrCollection);
 		}
 		return null;
 	};
@@ -53,14 +53,14 @@
 	};
 
 	JHTML.prototype.getTemplateContent = function (n) {
-		let node = n || this.node;
+		var node = n || this.node;
 		if(!!node.content) {
 			return document.importNode(node.content, true);
 		} else {
-			let fragment = document.createDocumentFragment();
-			let childcount = node.childNodes.length;
+			var fragment = document.createDocumentFragment();
+			var childcount = node.childNodes.length;
 
-			for(let i = 0; i < childcount; i++) {
+			for(var i = 0; i < childcount; i++) {
 				fragment.appendChild( node.childNodes[i].cloneNode(true) );
 			}
 			return fragment;

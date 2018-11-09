@@ -99,51 +99,49 @@
 	n.require = function(jsFileName){
 		if (jsFileName.indexOf('/') === -1) {
 			n.log("Importing jumpStart." + jsFileName + ".");
-			if(!document.querySelector("[src$='/" + jsFileName + "']")) {
-				return new Promise( function(resolve) {
-					let script = addScript(J.get('rootPath') + '/' + jsFileName);
-					script.addEventListener('load', resolve, false);
-				});
-			} else {
-				n.log("Internal File." + jsFileName + " has already been imported.","warning");
-			}
+			return new Promise( function(resolve) {
+				if(!document.querySelector("[src$='/" + jsFileName + "']")) {
+					addScript(J.get('rootPath') + '/' + jsFileName).addEventListener('load', resolve, false);
+				} else {
+					n.log("Internal File." + jsFileName + " has already been imported.","warning");
+					resolve();
+				}
+			});
 		} else {
 			n.log("Importing external." + jsFileName + ".");
-			if(!document.querySelector("[src='" + jsFileName + "']")) {
-				return new Promise( function(resolve) {
-					let script = addScript(jsFileName);
-					script.addEventListener('load', resolve, false);
-				});
-			} else {
-				n.log("External File." + jsFileName + " has already been imported.","warning");
-			}
+			return new Promise( function(resolve) {
+				if(!document.querySelector("[src='" + jsFileName + "']")) {
+					addScript(jsFileName).addEventListener('load', resolve, false);
+				} else {
+					n.log("External File." + jsFileName + " has already been imported.","warning");
+					resolve();
+				}
+			});
 		}
-		return;
 	};
 
 	n.include = function(jsFileName){
 		if (jsFileName.indexOf('/') === -1) {
 			n.log("Importing jumpStart." + jsFileName + ".");
-			if(!document.querySelector("[src$='/" + jsFileName + "']")) {
-				return new Promise( function(resolve) {
-					let script = addScript(J.get('rootPath') + '/' + jsFileName);
-					script.addEventListener('load', resolve, true);
-				});
-			} else {
-				n.log("Internal File." + jsFileName + " has already been imported.","warning");
-			}
+			return new Promise( function(resolve) {
+				if(!document.querySelector("[src$='/" + jsFileName + "']")) {
+					addScript(J.get('rootPath') + '/' + jsFileName).addEventListener('load', resolve, true);
+				} else {
+					n.log("Internal File." + jsFileName + " has already been imported.","warning");
+					resolve();
+				}
+			});
 		} else {
 			n.log("Importing external." + jsFileName + ".");
-			if(!document.querySelector("[src='" + jsFileName + "']")) {
-				return new Promise( function(resolve) {
-					let script = addScript(jsFileName, true);
-					script.addEventListener('load', resolve, true);
-				});
-			} else {
-				n.log("External File." + jsFileName + " has already been imported.","warning");
-			}
+			return new Promise( function(resolve) {
+				if(!document.querySelector("[src='" + jsFileName + "']")) {
+					addScript(jsFileName, true).addEventListener('load', resolve, true);
+				} else {
+					n.log("External File." + jsFileName + " has already been imported.","warning");
+					resolve();
+				}
+			});
 		}
-		return;
 	};
 
 	n.export = function(moduleName, moduleObject){
