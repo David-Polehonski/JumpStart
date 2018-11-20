@@ -190,6 +190,16 @@ if(!document.createDocumentFragment().contains) {
 	};
 }
 
+if(!Node.prototype.isConnected) {
+	Object.defineProperty(
+		Node.prototype,
+		'isConnected',
+		{
+			get: function () { return document.body.contains(this) }
+		}
+	);
+}
+
 //	ES6
 //	ES6.Promises
 if(!Window.Promise) {
