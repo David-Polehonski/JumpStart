@@ -567,79 +567,81 @@
 	};
 
 	J.Template.prototype.setter = function (name, newValue) {
-			var i = 0;
-			// Loop all bound nodes and update the bound elements.
-			for (i; i < this.nodes[name].length; i += 1) {
-					if (!!this.nodes[name][i].hasAttribute && this.nodes[name][i].hasAttribute(TARGET)) {
-							// Redirect binding to elements attribute instead.
-							if (this.nodes[name][i].hasAttribute(this.nodes[name][i].getAttribute(TARGET))) {
-									this.setAttributeValue(this.nodes[name][i], this.nodes[name][i].getAttribute(TARGET), newValue);
-							} else {
-									throw ("Missing bound attribute in TARGET directive. " + this.nodes[name][i].getAttribute(TARGET));
-							}
-					} else {
-							// Switch through default node behaviours
-							switch (this.nodes[name][i].nodeName) {
-							case '#text':
-									this.setTextNode(this.nodes[name][i], newValue);
-									break;
-							case "INPUT":
-									this.setInputNode(this.nodes[name][i], newValue);
-									break;
-							case "SELECT": // These getters and setters are for bound values, not attributes or options.
-									this.setSelectNode(this.nodes[name][i], newValue);
-									break;
-							}
-					}
-			}
+		var i = 0;
+		// Loop all bound nodes and update the bound elements.
+		for (i; i < this.nodes[name].length; i += 1) {
+				if (!!this.nodes[name][i].hasAttribute && this.nodes[name][i].hasAttribute(TARGET)) {
+						// Redirect binding to elements attribute instead.
+						if (this.nodes[name][i].hasAttribute(this.nodes[name][i].getAttribute(TARGET))) {
+								this.setAttributeValue(this.nodes[name][i], this.nodes[name][i].getAttribute(TARGET), newValue);
+						} else {
+								throw ("Missing bound attribute in TARGET directive. " + this.nodes[name][i].getAttribute(TARGET));
+						}
+				} else {
+						// Switch through default node behaviours
+						switch (this.nodes[name][i].nodeName) {
+						case '#text':
+								this.setTextNode(this.nodes[name][i], newValue);
+								break;
+						case "INPUT":
+								this.setInputNode(this.nodes[name][i], newValue);
+								break;
+						case "SELECT": // These getters and setters are for bound values, not attributes or options.
+								this.setSelectNode(this.nodes[name][i], newValue);
+								break;
+						}
+				}
+		}
 
-			// Update the data context last:
-			try {
-					this.updateDataContext(name, newValue);
-			} catch (e) {
-				J.log(e, 'error');
-			}
+		// Update the data context last:
+		try {
+				this.updateDataContext(name, newValue);
+		} catch (e) {
+			J.log(e, 'error');
+		}
 
 	};
 
 	// Default text node parameter binding functions.
 	J.Template.prototype.getTextNode = function (node) {
-			return node.nodeValue; // Return the string content of the text node containing the bound value.
+		return node.nodeValue; // Return the string content of the text node containing the bound value.
 	};
 
 	J.Template.prototype.setTextNode = function (node, value) {
-			value = (typeof value === 'undefined') ? '' : value;
-			node.nodeValue = value;
-			return;
+		value = (typeof value === 'undefined') ? '' : value;
+		node.nodeValue = value;
+		return;
 	};
 
 	// I/O Functions for params bound to input elements.
 	J.Template.prototype.getInputNode = function (node) {
-			return node.value; // Return the string content of the text node containing the bound value.
+		return node.value; // Return the string content of the text node containing the bound value.
 	};
+
 	J.Template.prototype.setInputNode = function (node, value) {
-			value = (typeof value === 'undefined') ? '' : value;
-			node.value = value;
-			return;
+		value = (typeof value === 'undefined') ? '' : value;
+		node.value = value;
+		return;
 	};
 
 	// I/O Functions for params bound to input elements.
 	J.Template.prototype.getSelectNode = function (node) {
-			return node.options[node.selectedIndex].value; // Return the string content of the options node containing the bound value.
+		return node.options[node.selectedIndex].value; // Return the string content of the options node containing the bound value.
 	};
+
 	J.Template.prototype.setSelectNode = function (node, value) {
-			var i = 0;
-			value = (typeof value === 'undefined') ? '' : value;
+		var i = 0;
+		value = (typeof value === 'undefined') ? '' : value;
 
-			do {
-					if (node.options[i].value === value) {
-							node.selectedIndex = i;
-							return;
-					}
-					i += 1; // Onto the next.
-			} while (i < node.options.length);
+		do {
+				if (node.options[i].value === value) {
+						node.selectedIndex = i;
+						return;
+				}
+				i += 1; // Onto the next.
+		} while (i < node.options.length);
 
-			return;
+		return;
 	};
 
 	J.Template.prototype.attach = function (targetElement) {

@@ -190,7 +190,7 @@ if(!document.createDocumentFragment().contains) {
 	};
 }
 
-if(!Node.prototype.isConnected) {
+if(!'isConnected' in Node.prototype) {
 	Object.defineProperty(
 		Node.prototype,
 		'isConnected',
