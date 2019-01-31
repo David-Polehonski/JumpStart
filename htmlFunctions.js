@@ -83,19 +83,50 @@
 			});
 		}
 
+		if (/template/i.test(this.node.nodeName) && !this.node.content) {
+			Object.defineProperty(this, 'content', {
+				get: (function () { return JHTML.getTemplateContent(this.node) }).bind(this)
+			});
+		}
+
 		return this;
 	};
 
 	var JHTMLCollection = J.Class('JHTMLCollection').extend(JHTML);
 	JHTMLCollection.prototype.init = function (htmlNodeList) {
 		this.collection = htmlNodeList;
+		
+		Object.defineProperty(this, 'length', {
+			'get': function () { return this.collection.length }
+		})
+
 		return this;
 	};
 
-	J.html = function (htmlNode) {
-		return new JHTML(htmlNode);
+	JHTMLCollection.prototype.forEach = function (fx_callBack) {
+		Array.prototype.forEach.call(this.collection, function (html_node) {
+			fx_callBack( new JHTMLNode(html_node) );
+		});
 	};
 
+	J.html = function (htmlNode_or_stringSelector) {
+		if(typeof htmlNode_or_stringSelector === "string") {
+			var nodeList_search = document.querySelectorAll(htmlNode_or_stringSelector);
+			if (nodeList_search.length > 1)
+				return new JHTML(nodeList_search);
+			
+			if (nodeList_search.length === 1)
+				return new JHTML(nodeList_search[0]);
+			
+			return null;
+		} else {
+			return new JHTML(htmlNode_or_stringSelector);
+		}
+	};
+
+	/*
+		Polyfil for scrollX and scrollY properties
+	*/
 	var getScrollX  = function (n) {
 		var supportPageOffset = window.pageXOffset !== undefined;
 		var isCSS1Compat = ((document.compatMode || "") === "CSS1Compat");
