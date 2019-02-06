@@ -116,7 +116,7 @@
 		var listener = this.closeDialogues.bind(this);
 
 		this.container.addEventListener('click', function(e) { if (!!document.querySelector('html.no-touch')) listener(e); }, false); // Use Capture?
-		this.container.addEventListener('touchstart', function(e) { if (!document.querySelector('html.no-touch')) listener(e); }, false); // Use Capture?
+		this.container.addEventListener('touchstart', function(e) { if (!document.querySelector('html.no-touch')) listener(e); }, J.get('supportsPassiveEvents')?{'passive':true}:false); // Use Capture?
 
 		this.container.addEventListener('dialogOpened', this.update.bind(this), false); // Use Capture?
 		this.container.addEventListener('dialogClosed', this.update.bind(this), false); // Use Capture?
